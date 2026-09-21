@@ -159,6 +159,13 @@ export default function App() {
           profile={profile}
           onChange={update}
           onDone={() => setShowSettings(false)}
+          onRestart={() => {
+            // Vaciar los carriles hace que la app vuelva al asistente. No toca
+            // nada en Google: solo el reparto guardado en este movil.
+            update({ calendars: {} })
+            setManualSetup(false)
+            setShowSettings(false)
+          }}
           onSignOut={logout}
           onReload={reload}
         />

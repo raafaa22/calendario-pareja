@@ -45,3 +45,29 @@ export function ourCalendarCandidates(list: GCalCalendar[]): GCalCalendar[] {
       (c.accessRole === 'owner' || c.accessRole === 'writer'),
   )
 }
+
+/** Nombres con los que la gente llama al calendario de la pareja. */
+const COUPLE_NAME = /\b(nosotros|nosotras|los\s+dos|las\s+dos|pareja|juntos|juntas)\b/i
+
+/**
+ * De entre los candidatos, cual es probablemente el calendario conjunto.
+ * Devuelve null si no esta claro: preseleccionar mal es peor que no
+ * preseleccionar, porque el usuario da por bueno lo que ya viene puesto.
+ *
+ * El orden de las pistas no es casual:
+ *  1. Si te lo ha compartido otra persona, es casi seguro el conjunto: los
+ *     tuyos sueltos los tienes tu.
+ *  2. Si no, por el nombre, que descarta restos de configuraciones viejas
+ *     ("Mi agenda") sin tener que saber de donde salieron.
+ */
+export function pickOurCalendar(list: GCalCalendar[]): GCalCalendar | null {
+  const candidates = ourCalendarCandidates(list)
+  if (candidates.length <= 1) return candidates[0] ?? null
+
+  const shared = candidates.filter((c) => c.accessRole !== 'owner')
+  if (shared.length === 1) return shared[0]
+
+  const pool = shared.length > 1 ? shared : candidates
+  const named = pool.filter((c) => COUPLE_NAME.test(c.summary ?? ''))
+  return named.length === 1 ? named[0] : null
+}

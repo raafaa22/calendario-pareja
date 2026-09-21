@@ -129,6 +129,40 @@ eq('candidatos a conjunto', g.ourCalendarCandidates(lista).map((c) => c.id),
    ['nosotros@group.calendar.google.com'])
 eq('sin candidatos si solo hay personales', g.ourCalendarCandidates([lista[0], lista[3]]).map((c) => c.id), [])
 
+// Elegir el conjunto entre varios candidatos: preseleccionar mal es peor que
+// no preseleccionar, porque lo que ya viene puesto se da por bueno.
+const pick = (l) => g.pickOurCalendar(l)?.id ?? null
+eq('con uno solo, ese', pick(lista), 'nosotros@group.calendar.google.com')
+eq('sin candidatos, ninguno', pick([lista[0], lista[1]]), null)
+// Su movil: el conjunto se lo ha compartido el, los suyos son suyos.
+eq('gana el que te han compartido', pick([
+  lista[0],
+  cal('mia@group.calendar.google.com', { accessRole: 'owner' }),
+  cal('nosotros@group.calendar.google.com', { accessRole: 'writer' }),
+]), 'nosotros@group.calendar.google.com')
+// Su movil con restos de una configuracion vieja: todos suyos, decide el nombre.
+eq('si todos son tuyos, decide el nombre', pick([
+  lista[0],
+  cal('miagenda@group.calendar.google.com', { summary: 'Mi agenda', accessRole: 'owner' }),
+  cal('nosotros@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+]), 'nosotros@group.calendar.google.com')
+eq('tambien reconoce otros nombres', pick([
+  lista[0],
+  cal('a@group.calendar.google.com', { summary: 'Trabajo', accessRole: 'owner' }),
+  cal('b@group.calendar.google.com', { summary: 'Los dos', accessRole: 'owner' }),
+]), 'b@group.calendar.google.com')
+// Dos igual de plausibles: mejor no elegir por el usuario.
+eq('si hay empate no elige', pick([
+  lista[0],
+  cal('a@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('b@group.calendar.google.com', { summary: 'Pareja', accessRole: 'owner' }),
+]), null)
+eq('sin pistas tampoco elige', pick([
+  lista[0],
+  cal('a@group.calendar.google.com', { summary: 'Trabajo', accessRole: 'owner' }),
+  cal('b@group.calendar.google.com', { summary: 'Gym', accessRole: 'owner' }),
+]), null)
+
 // --- quien es quien en cada movil ---
 // Los carriles son fijos en los dos telefonos, asi que el nombre que se ensena
 // tiene que depender de quien ha entrado. Sin esto, en su movil saldria "Yo"

@@ -2,11 +2,15 @@ import { OWNER_STYLES } from '../lib/config'
 import { fmt } from '../lib/dates'
 import { useOwnerLabels } from '../lib/labels'
 import type { AppEvent } from '../lib/model'
-import { getTag } from '../lib/tags'
+import { getTag, guessTag } from '../lib/tags'
 
 /**
- * Emoji del evento: manda el elegido a mano, y si no hay, el de la primera
- * etiqueta reconocida.
+ * Emoji del evento, por orden: el elegido a mano, el de su etiqueta, y si no
+ * tiene ninguno, uno adivinado por el nombre.
+ *
+ * Lo tercero es lo que hace util todo esto: la mayoria de eventos no se crean
+ * desde la app —el horario de trabajo, las clases que ya estaban en Google— y
+ * sin adivinar se quedarian todos sin icono.
  */
 export function eventIcon(ev: AppEvent): string | null {
   if (ev.emoji) return ev.emoji
@@ -14,7 +18,8 @@ export function eventIcon(ev: AppEvent): string | null {
     const tag = getTag(id)
     if (tag) return tag.icon
   }
-  return null
+  const guessed = guessTag(ev.title)
+  return guessed ? (getTag(guessed)?.icon ?? null) : null
 }
 
 /** Que se ensena en el chip compacto, ademas del nombre. */

@@ -132,7 +132,24 @@ círculo:
 
 Si prefieres hacerlo a mano, o cambiar algo después, **Ajustes → Los
 calendarios** deja elegir otros calendarios, crear nuevos, renombrarlos,
-compartirlos y quitarlos. Y si te han compartido uno pero no te aparece en la
+compartirlos y quitarlos.
+
+**Ajustes** está repartido en secciones, cada una en su pantalla, con una flecha
+para volver en la cabecera: *Los calendarios*, *Aspecto*, *La vista de mes*,
+*Aniversarios*, *Avisos por defecto* y *Nombre y datos*. Cada fila del menú
+enseña en qué está ahora mismo, para no tener que entrar a mirar.
+
+> **La configuración se guarda en cada dispositivo, no en la cuenta.** Si lo
+> montas en el ordenador, el móvil seguirá con lo que tuviera (o sin nada). Para
+> eso está **Ajustes → ¿Apunta a los calendarios que no son? → Volver a la
+> configuración guiada**: vacía el reparto de este dispositivo y lanza el
+> asistente otra vez. No toca nada en Google.
+
+Al elegir el calendario conjunto, el asistente preselecciona el que mejor pinta
+tiene: primero uno que te haya compartido otra persona, y si no, por el nombre
+(«Nosotros», «Los dos», «Pareja»…). Si hay empate no preselecciona ninguno y
+avisa, porque dar por bueno lo que ya viene puesto es justo como acaban dos
+calendarios conjuntos distintos. Y si te han compartido uno pero no te aparece en la
 lista (pasa cuando Google se queda esperando que aceptes la invitación por
 correo), el enlace **«No me sale en la lista…»** lo añade pegando su ID.
 

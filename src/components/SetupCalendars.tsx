@@ -31,10 +31,18 @@ interface Props {
   onChange: (patch: Partial<Settings>) => void
   /** Al cerrar desde los ajustes; ausente durante la configuracion inicial. */
   onDone?: () => void
+  /** Volver al asistente. Ausente durante la configuracion inicial. */
+  onRestart?: () => void
   onSignOut: () => void
 }
 
-export default function SetupCalendars({ settings, onChange, onDone, onSignOut }: Props) {
+export default function SetupCalendars({
+  settings,
+  onChange,
+  onDone,
+  onRestart,
+  onSignOut,
+}: Props) {
   const labels = ownerLabels(settings)
   const suggested = suggestedNames(settings.me)
   const [calendars, setCalendars] = useState<GCalCalendar[]>([])
@@ -45,6 +53,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
   const [shareEmail, setShareEmail] = useState('')
   const [shareRole, setShareRole] = useState<'reader' | 'writer'>('writer')
   const [msg, setMsg] = useState<string | null>(null)
+  const [restartArmed, setRestartArmed] = useState(false)
   const [byIdOwner, setByIdOwner] = useState<Owner | null>(null)
   const [byIdValue, setByIdValue] = useState('')
 
@@ -183,8 +192,9 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
   const done = OWNERS.every((o) => settings.calendars[o])
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-5">
-      <h1 className="text-xl font-extrabold">Los calendarios</h1>
+    <div className="mx-auto max-w-lg px-4 py-4">
+      {/* Dentro de los ajustes el titulo ya lo pone la cabecera. */}
+      {!onDone && <h1 className="text-xl font-extrabold">Los calendarios</h1>}
       <p className="mt-1.5 text-sm leading-relaxed text-muted">
         Elige qué calendario de Google corresponde a cada uno, y con qué nombre
         quieres verlo en la app. Marca también cuál de los dos eres tú: los dos
@@ -416,6 +426,49 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
       )}
       {msg && <p className="mt-3 text-[11px] leading-snug text-muted">{msg}</p>}
 
+      {/*
+        Salida para cuando la configuracion de este movil se quedo vieja: pasa
+        si lo montaste en otro sitio, o antes de que existiera el asistente.
+        La app guarda los ajustes por dispositivo, asi que no hay forma de que
+        se entere sola.
+      */}
+      {onRestart && (
+        <section className="mt-5 rounded-3xl border border-line bg-surface p-3.5 shadow-card">
+          <h2 className="text-sm font-extrabold">¿Apunta a los calendarios que no son?</h2>
+          <p className="mt-1 text-[11px] leading-snug text-subtle">
+            Pasa si lo configuraste en otro dispositivo: cada móvil guarda lo
+            suyo. Con esto vuelves al asistente y lo detecta todo otra vez. No
+            se borra ni se toca nada en Google.
+          </p>
+          {restartArmed ? (
+            <div className="mt-2.5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setRestartArmed(false)}
+                className="tap flex-1 rounded-xl border border-line py-2.5 text-xs font-semibold text-muted"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={onRestart}
+                className="tap flex-1 rounded-xl bg-accent py-2.5 text-xs font-bold text-accent-fg"
+              >
+                Sí, volver a empezar
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setRestartArmed(true)}
+              className="tap mt-2.5 w-full rounded-2xl border border-accent-line bg-accent-soft py-2.5 text-sm font-bold text-accent"
+            >
+              Volver a la configuración guiada
+            </button>
+          )}
+        </section>
+      )}
+
       <div className="mt-6 flex flex-col gap-2.5">
         <button
           type="button"
@@ -425,32 +478,30 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
           Recargar la lista
         </button>
 
-        {onDone ? (
-          <button
-            type="button"
-            onClick={onDone}
-            className="tap rounded-2xl bg-accent py-3 text-sm font-bold text-accent-fg"
-          >
-            Volver al calendario
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={!done}
-            onClick={() => window.location.reload()}
-            className="tap rounded-2xl bg-accent py-3 text-sm font-bold text-accent-fg disabled:opacity-35"
-          >
-            {done ? 'Empezar' : 'Asigna los tres calendarios'}
-          </button>
+        {/*
+          Dentro de los ajustes, la flecha de la cabecera ya sirve para volver y
+          cerrar sesion esta en su seccion. Estos botones solo hacen falta en la
+          configuracion inicial, que no tiene cabecera.
+        */}
+        {!onDone && (
+          <>
+            <button
+              type="button"
+              disabled={!done}
+              onClick={() => window.location.reload()}
+              className="tap rounded-2xl bg-accent py-3 text-sm font-bold text-accent-fg disabled:opacity-35"
+            >
+              {done ? 'Empezar' : 'Asigna los tres calendarios'}
+            </button>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="tap py-1 text-xs text-subtle underline decoration-line"
+            >
+              Cerrar sesión
+            </button>
+          </>
         )}
-
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="tap py-1 text-xs text-subtle underline decoration-line"
-        >
-          Cerrar sesión
-        </button>
       </div>
     </div>
   )

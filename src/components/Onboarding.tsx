@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { Profile } from '../lib/auth'
-import { detectPartnerEmail, ourCalendarCandidates } from '../lib/calendarGuess'
+import {
+  detectPartnerEmail,
+  ourCalendarCandidates,
+  pickOurCalendar,
+} from '../lib/calendarGuess'
 import { OWNER_STYLES } from '../lib/config'
 import {
   addCalendarToList,
@@ -76,9 +80,15 @@ export default function Onboarding({ profile, onChange, onManual, onSignOut }: P
         if (!alive) return
         setCalendars(list)
 
-        // Si hay exactamente uno, se preselecciona: es casi seguro el bueno.
-        const candidates = ourCalendarCandidates(list)
-        if (candidates.length === 1) setOursChoice(candidates[0].id)
+        /*
+         * Se preselecciona el que mejor pinta tiene, no el primero: en un movil
+         * con restos de una configuracion vieja, el primero puede ser "Mi
+         * agenda". Si no esta claro no se elige ninguno y sale un aviso, porque
+         * crear un segundo calendario conjunto no se nota hasta que uno apunta
+         * una cena y el otro no la ve.
+         */
+        const best = pickOurCalendar(list)
+        if (best) setOursChoice(best.id)
 
         // Y si ya te compartio el suyo, su correo esta a la vista: no hace
         // falta que lo escribas.
@@ -294,20 +304,23 @@ export default function Onboarding({ profile, onChange, onManual, onSignOut }: P
                   onChange={(e) => setOursChoice(e.target.value)}
                   className="w-full appearance-none rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm outline-none focus:border-accent-line"
                 >
-                  <option value="">Crear uno nuevo llamado «Nosotros»</option>
                   {oursCandidates.map((c) => (
                     <option key={c.id} value={c.id}>
                       Usar «{c.summary}»
+                      {c.accessRole === 'owner' ? ' (tuyo)' : ' (compartido contigo)'}
                     </option>
                   ))}
+                  <option value="">Crear uno nuevo llamado «Nosotros»</option>
                 </select>
               ) : (
                 <p className="text-sm font-semibold">Se creará «Nosotros»</p>
               )}
               <p className="mt-1.5 text-[11px] leading-snug text-subtle">
-                {oursCandidates.length > 0
-                  ? 'Si tu pareja ya lo creó y te lo compartió, elígelo de la lista en vez de crear otro.'
-                  : 'Si tu pareja ya lo creó, pídele que te lo comparta antes de seguir; si no, tendréis dos.'}
+                {oursCandidates.length === 0
+                  ? 'Si tu pareja ya lo creó, pídele que te lo comparta antes de seguir; si no, tendréis dos.'
+                  : oursChoice
+                    ? 'Se reutiliza el que ya existe. Solo crea uno nuevo si ninguno de la lista es el vuestro.'
+                    : 'Ojo: ya tienes calendarios que podrían valer. Si creas otro, tendréis dos y cada uno verá el suyo.'}
               </p>
             </div>
 
@@ -341,6 +354,13 @@ export default function Onboarding({ profile, onChange, onManual, onSignOut }: P
                 </li>
               </ul>
             </div>
+
+            {oursCandidates.length > 0 && !oursChoice && (
+              <p className="mt-3 rounded-2xl border border-line bg-warn-soft px-3 py-2 text-[11px] leading-snug text-warn">
+                Vas a crear un calendario conjunto nuevo teniendo otros que
+                podrían servir. Si tu pareja ya creó el vuestro, elígelo arriba.
+              </p>
+            )}
 
             {error && (
               <p className="mt-4 rounded-2xl border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger">
