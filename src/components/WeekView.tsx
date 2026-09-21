@@ -31,7 +31,7 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Cabecera de dias, fija */}
-      <div className="flex shrink-0 border-b border-white/10 pr-1">
+      <div className="flex shrink-0 border-b border-line pr-1">
         <div className="w-9 shrink-0" />
         {days.map((d) => (
           <button
@@ -40,10 +40,10 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
             onClick={() => onSelectDay(d)}
             className="tap flex flex-1 flex-col items-center py-1"
           >
-            <span className="text-[9px] font-semibold text-white/40">{fmt.weekdayShort(d)}</span>
+            <span className="text-[9px] font-semibold text-subtle">{fmt.weekdayShort(d)}</span>
             <span
               className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
-                isToday(d) ? 'bg-slate-100 text-slate-900' : 'text-white/80'
+                isToday(d) ? 'bg-accent text-accent-fg' : 'text-fg'
               }`}
             >
               {fmt.dayNum(d)}
@@ -54,8 +54,8 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
 
       {/* Banda de eventos de dia completo, solo si hay alguno esta semana */}
       {hasAllDay && (
-        <div className="flex shrink-0 border-b border-white/10 pr-1">
-          <div className="w-9 shrink-0 pt-1 text-right text-[8px] text-white/30">día</div>
+        <div className="flex shrink-0 border-b border-line pr-1">
+          <div className="w-9 shrink-0 pt-1 text-right text-[8px] text-subtle">día</div>
           {days.map((d, i) => (
             <div key={d.toISOString()} className="flex min-w-0 flex-1 flex-col gap-px p-px">
               {allDay[i].map((ev) => (
@@ -81,10 +81,10 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
             {hours.map((h) => (
               <div
                 key={h}
-                className="relative border-t border-white/5 text-right"
+                className="relative border-t border-line text-right"
                 style={{ height: HOUR_PX }}
               >
-                <span className="absolute -top-1.5 right-1 text-[9px] tabular-nums text-white/30">
+                <span className="absolute -top-1.5 right-1 text-[9px] tabular-nums text-subtle">
                   {h > 0 ? `${String(h).padStart(2, '0')}` : ''}
                 </span>
               </div>
@@ -117,9 +117,9 @@ function DayColumn({
   const placed = useMemo(() => layout(events, day), [events, day])
 
   return (
-    <div className="relative min-w-0 flex-1 border-l border-white/5">
+    <div className="relative min-w-0 flex-1 border-l border-line">
       {Array.from({ length: 24 }, (_, h) => (
-        <div key={h} className="border-t border-white/5" style={{ height: HOUR_PX }} />
+        <div key={h} className="border-t border-line" style={{ height: HOUR_PX }} />
       ))}
 
       {isToday(day) && <NowLine />}
@@ -176,8 +176,8 @@ function NowLine() {
   }, [])
 
   return (
-    <div ref={ref} className="pointer-events-none absolute inset-x-0 z-10 h-px bg-sky-200">
-      <span className="absolute -left-0.5 -top-1 h-2 w-2 rounded-full bg-sky-200" />
+    <div ref={ref} className="pointer-events-none absolute inset-x-0 z-10 h-px bg-accent">
+      <span className="absolute -left-0.5 -top-1 h-2 w-2 rounded-full bg-accent" />
     </div>
   )
 }

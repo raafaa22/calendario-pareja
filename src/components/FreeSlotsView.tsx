@@ -38,13 +38,13 @@ export default function FreeSlotsView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-white/10 px-3 pb-2">
-        <p className="mb-2 text-xs text-white/40">
-          Huecos en los que <span className="text-white/70">nadie</span> tiene nada, entre las{' '}
+      <div className="shrink-0 border-b border-line px-3 pb-2">
+        <p className="mb-2 text-xs text-subtle">
+          Huecos en los que <span className="text-fg">nadie</span> tiene nada, entre las{' '}
           {DAY_WINDOW.startHour}:00 y las {DAY_WINDOW.endHour}:00.
         </p>
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <span className="shrink-0 text-[11px] text-white/40">Al menos</span>
+          <span className="shrink-0 text-[11px] text-subtle">Al menos</span>
           {PRESETS.map((m) => (
             <button
               key={m}
@@ -52,8 +52,8 @@ export default function FreeSlotsView({
               onClick={() => onMinMinutesChange(m)}
               className={`tap shrink-0 rounded-full border px-2.5 py-1 text-[11px] transition ${
                 minMinutes === m
-                  ? 'border-emerald-300/50 bg-emerald-400/20 text-emerald-100'
-                  : 'border-white/10 text-white/50'
+                  ? 'border-accent-line bg-accent-soft text-accent'
+                  : 'border-line text-muted'
               }`}
             >
               {formatDuration(m)}
@@ -64,7 +64,7 @@ export default function FreeSlotsView({
 
       {days.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-8 text-center">
-          <p className="text-sm text-white/40">
+          <p className="text-sm text-subtle">
             No hay ningún hueco de {formatDuration(minMinutes)} seguidos. Prueba con
             menos tiempo.
           </p>
@@ -76,7 +76,7 @@ export default function FreeSlotsView({
               <h3 className="mb-1.5 text-xs font-semibold">
                 <span
                   className={
-                    isToday(day) ? 'text-sky-200' : 'text-white/60 first-letter:uppercase'
+                    isToday(day) ? 'text-accent' : 'text-muted first-letter:uppercase'
                   }
                 >
                   {isToday(day) ? 'Hoy' : isTomorrow(day) ? 'Mañana' : fmt.dayFull(day)}
@@ -88,16 +88,16 @@ export default function FreeSlotsView({
                     key={slot.start.toISOString()}
                     type="button"
                     onClick={() => onPickSlot(slot.start, slot.end)}
-                    className="tap flex items-center justify-between rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 py-2.5 text-left"
+                    className="tap flex items-center justify-between rounded-xl border border-accent-line bg-accent-soft px-3 py-2.5 text-left"
                   >
-                    <span className="text-sm font-medium tabular-nums text-emerald-50">
+                    <span className="text-sm font-medium tabular-nums text-accent">
                       {fmt.time(slot.start)} – {fmt.time(slot.end)}
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-emerald-200/70">
+                      <span className="text-xs text-muted">
                         {formatDuration(slot.minutes)}
                       </span>
-                      <span className="text-emerald-200">＋</span>
+                      <span className="text-accent">＋</span>
                     </span>
                   </button>
                 ))}

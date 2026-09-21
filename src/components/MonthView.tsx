@@ -21,9 +21,9 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="grid grid-cols-7 border-b border-white/10 px-1 pb-1">
+      <div className="grid grid-cols-7 border-b border-line px-1 pb-1">
         {days.slice(0, 7).map((d) => (
-          <div key={d.toISOString()} className="text-center text-[10px] font-semibold text-white/40">
+          <div key={d.toISOString()} className="text-center text-[10px] font-semibold text-subtle">
             {fmt.weekdayShort(d)}
           </div>
         ))}
@@ -45,12 +45,12 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
               onClick={() => onSelectDay(day)}
               onKeyDown={(e) => e.key === 'Enter' && onSelectDay(day)}
               className={`tap flex min-h-[64px] cursor-pointer flex-col gap-0.5 rounded-lg p-1 transition ${
-                isSel ? 'bg-white/10 ring-1 ring-white/30' : 'hover:bg-white/5'
+                isSel ? 'bg-accent-soft ring-1 ring-accent-line' : 'hover:bg-elevated'
               } ${outside ? 'opacity-35' : ''}`}
             >
               <span
                 className={`self-start rounded px-1 text-[11px] font-semibold tabular-nums ${
-                  isToday(day) ? 'bg-slate-100 text-slate-900' : 'text-white/70'
+                  isToday(day) ? 'bg-accent text-accent-fg' : 'text-fg'
                 }`}
               >
                 {fmt.dayNum(day)}
@@ -61,7 +61,7 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
                   <EventChip key={`${ev.calendarId}:${ev.id}`} event={ev} onClick={onOpenEvent} />
                 ))}
                 {hidden > 0 && (
-                  <span className="self-center text-[9px] leading-none text-white/45">
+                  <span className="self-center text-[9px] leading-none text-subtle">
                     +{hidden}
                   </span>
                 )}
@@ -72,13 +72,13 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
       </div>
 
       {/* Detalle del dia tocado, debajo de la rejilla. */}
-      <div className="flex max-h-[38%] shrink-0 flex-col border-t border-white/10">
-        <div className="shrink-0 px-3 pt-2 text-xs font-semibold text-white/60 first-letter:uppercase">
+      <div className="flex max-h-[38%] shrink-0 flex-col border-t border-line">
+        <div className="shrink-0 px-3 pt-2 text-xs font-semibold text-muted first-letter:uppercase">
           {fmt.dayFull(selected)}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
           {dayOfSelected.length === 0 ? (
-            <p className="py-1 text-sm text-white/35">Sin eventos.</p>
+            <p className="py-1 text-sm text-subtle">Sin eventos.</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {dayOfSelected.map((ev) => (

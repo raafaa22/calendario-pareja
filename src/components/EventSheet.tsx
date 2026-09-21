@@ -134,14 +134,14 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
       />
 
       <div
-        className="relative flex max-h-[92vh] w-full max-w-lg flex-col rounded-t-3xl border border-white/10 bg-[#122430] sm:rounded-3xl"
+        className="relative flex max-h-[92vh] w-full max-w-lg flex-col rounded-t-3xl border border-line bg-surface sm:rounded-3xl"
         style={{ paddingBottom: 'var(--safe-bottom)' }}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="tap text-sm text-white/50"
+            className="tap text-sm text-muted"
             disabled={busy}
           >
             Cancelar
@@ -150,13 +150,13 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
             {isNew ? 'Nuevo evento' : readOnly ? 'Evento' : 'Editar evento'}
           </h2>
           {readOnly ? (
-            <span className="text-sm text-white/30">Solo lectura</span>
+            <span className="text-sm text-subtle">Solo lectura</span>
           ) : (
             <button
               type="button"
               onClick={handleSave}
               disabled={busy}
-              className="tap rounded-full bg-sky-300 px-3.5 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
+              className="tap rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-fg disabled:opacity-50"
             >
               {busy ? '…' : 'Guardar'}
             </button>
@@ -170,7 +170,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
               onChange={(e) => set('title', e.target.value)}
               placeholder="¿Qué es?"
               autoFocus={isNew}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-base outline-none placeholder:text-white/25 focus:border-sky-300/60"
+              className="w-full rounded-xl border border-line bg-elevated px-3 py-2.5 text-base outline-none placeholder:text-subtle focus:border-accent-line"
             />
 
             <Field label="¿De quién es?">
@@ -186,7 +186,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       onClick={() => set('owner', owner)}
                       disabled={!usable}
                       className={`tap rounded-xl border px-2 py-2 text-xs font-medium transition ${
-                        active ? style.chip : 'border-white/10 text-white/45'
+                        active ? style.chip : 'border-line text-subtle'
                       } disabled:opacity-25`}
                     >
                       <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${style.dot}`} />
@@ -197,13 +197,13 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
               </div>
             </Field>
 
-            <label className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <label className="flex items-center justify-between rounded-xl border border-line bg-elevated px-3 py-2.5">
               <span className="text-sm">Todo el día</span>
               <input
                 type="checkbox"
                 checked={draft.allDay}
                 onChange={(e) => set('allDay', e.target.checked)}
-                className="h-5 w-5 accent-sky-400"
+                className="h-5 w-5 accent-accent"
               />
             </label>
 
@@ -231,10 +231,10 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                     freq: e.target.value as Freq,
                   })
                 }
-                className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-sky-300/60"
+                className="w-full appearance-none rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none focus:border-accent-line"
               >
                 {(Object.keys(FREQ_LABELS) as Freq[]).map((f) => (
-                  <option key={f} value={f} className="bg-[#122430]">
+                  <option key={f} value={f} className="bg-surface">
                     {FREQ_LABELS[f]}
                   </option>
                 ))}
@@ -256,8 +256,8 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                         }
                         className={`tap h-8 flex-1 rounded-lg border text-xs font-semibold transition ${
                           active
-                            ? 'border-sky-300/50 bg-sky-400/20 text-sky-100'
-                            : 'border-white/10 text-white/40'
+                            ? 'border-accent-line bg-accent-soft text-accent'
+                            : 'border-line text-subtle'
                         }`}
                       >
                         {label}
@@ -269,7 +269,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
 
               {draft.recurrence.freq !== 'none' && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-white/40">Hasta</span>
+                  <span className="text-xs text-subtle">Hasta</span>
                   <input
                     type="date"
                     value={draft.recurrence.until ?? ''}
@@ -279,13 +279,13 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                         until: e.target.value || undefined,
                       })
                     }
-                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-300/60"
+                    className="flex-1 rounded-lg border border-line bg-elevated px-2 py-1.5 text-sm outline-none focus:border-accent-line"
                   />
                   {draft.recurrence.until && (
                     <button
                       type="button"
                       onClick={() => set('recurrence', { ...draft.recurrence, until: undefined })}
-                      className="tap text-xs text-white/40"
+                      className="tap text-xs text-subtle"
                     >
                       sin fin
                     </button>
@@ -305,8 +305,8 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       onClick={() => set('reminders', toggle(draft.reminders, minutes).sort((a, b) => a - b))}
                       className={`tap rounded-full border px-2.5 py-1 text-xs transition ${
                         active
-                          ? 'border-emerald-300/50 bg-emerald-400/20 text-emerald-100'
-                          : 'border-white/10 text-white/45'
+                          ? 'border-accent-line bg-accent-soft text-accent'
+                          : 'border-line text-subtle'
                       }`}
                     >
                       {active ? '🔔 ' : ''}
@@ -315,7 +315,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                   )
                 })}
               </div>
-              <p className="mt-1.5 text-[11px] leading-snug text-white/30">
+              <p className="mt-1.5 text-[11px] leading-snug text-subtle">
                 Los avisos llegan como notificación de Google Calendar al móvil.
               </p>
             </Field>
@@ -331,8 +331,8 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       onClick={() => set('tags', toggle(draft.tags, tag.id))}
                       className={`tap rounded-full border px-2.5 py-1 text-xs transition ${
                         active
-                          ? 'border-white/30 bg-white/15 text-white'
-                          : 'border-white/10 text-white/45'
+                          ? 'border-accent-line bg-accent-soft text-accent'
+                          : 'border-line text-subtle'
                       }`}
                     >
                       <span className="mr-1">{tag.icon}</span>
@@ -348,7 +348,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                 value={draft.location}
                 onChange={(e) => set('location', e.target.value)}
                 placeholder="Opcional"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-sky-300/60"
+                className="w-full rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
               />
             </Field>
 
@@ -358,7 +358,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                 onChange={(e) => set('notes', e.target.value)}
                 rows={3}
                 placeholder="Opcional"
-                className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none placeholder:text-white/25 focus:border-sky-300/60"
+                className="w-full resize-none rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
               />
             </Field>
 
@@ -377,8 +377,8 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       onClick={() => setScope(value)}
                       className={`tap rounded-xl border px-2 py-2 text-xs font-medium transition ${
                         scope === value
-                          ? 'border-emerald-300/50 bg-emerald-400/20 text-emerald-100'
-                          : 'border-white/10 text-white/45'
+                          ? 'border-accent-line bg-accent-soft text-accent'
+                          : 'border-line text-subtle'
                       }`}
                     >
                       {label}
@@ -390,19 +390,19 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
           </fieldset>
 
           {error && (
-            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            <p className="mt-4 rounded-xl border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger">
               {error}
             </p>
           )}
 
           {event && (
-            <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4">
+            <div className="mt-5 flex flex-col gap-2 border-t border-line pt-4">
               {event.htmlLink && (
                 <a
                   href={event.htmlLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="tap text-center text-xs text-white/35 underline decoration-white/20"
+                  className="tap text-center text-xs text-subtle underline decoration-line"
                 >
                   Abrir en Google Calendar
                 </a>
@@ -413,7 +413,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(false)}
-                      className="tap flex-1 rounded-xl border border-white/10 py-2.5 text-sm text-white/60"
+                      className="tap flex-1 rounded-xl border border-line py-2.5 text-sm text-muted"
                     >
                       No, dejarlo
                     </button>
@@ -421,7 +421,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       type="button"
                       onClick={handleDelete}
                       disabled={busy}
-                      className="tap flex-1 rounded-xl bg-red-500/90 py-2.5 text-sm font-semibold disabled:opacity-50"
+                      className="tap flex-1 rounded-xl bg-danger-strong py-2.5 text-sm font-semibold text-danger-strong-fg disabled:opacity-50"
                     >
                       Borrar {isSeries && scope === 'series' ? 'la serie' : 'este día'}
                     </button>
@@ -430,7 +430,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="tap rounded-xl border border-red-400/25 py-2.5 text-sm text-red-300"
+                    className="tap rounded-xl border border-danger-line py-2.5 text-sm text-danger"
                   >
                     Borrar evento
                   </button>
@@ -447,7 +447,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
 function LabelledRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-16 shrink-0 text-xs font-medium text-white/45">{label}</span>
+      <span className="w-16 shrink-0 text-xs font-medium text-subtle">{label}</span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
@@ -456,7 +456,7 @@ function LabelledRow({ label, children }: { label: string; children: React.React
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-1.5 text-xs font-medium text-white/45">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-subtle">{label}</div>
       {children}
     </div>
   )
@@ -488,7 +488,7 @@ function DateTimeInput({
           : new Date(e.target.value)
         if (!Number.isNaN(next.getTime())) onChange(next)
       }}
-      className="w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-2.5 text-sm tabular-nums outline-none focus:border-sky-300/60"
+      className="w-full rounded-xl border border-line bg-elevated px-2.5 py-2.5 text-sm tabular-nums outline-none focus:border-accent-line"
     />
   )
 }

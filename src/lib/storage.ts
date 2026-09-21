@@ -1,9 +1,11 @@
 import type { Owner } from './config'
 import type { GCalEvent } from './gcal'
+import type { Accent, Theme } from './theme'
 
 /**
- * Ajustes en localStorage: que calendario de Google corresponde a cada uno de
- * los tres carriles de la app. Es lo unico que la app necesita recordar.
+ * Ajustes en localStorage. Se guardan **por cuenta de Google**, asi cada uno
+ * tiene su tema, su acento y sus calendarios sin pisar al otro, incluso si los
+ * dos entran alguna vez desde el mismo movil.
  */
 export interface CalendarLink {
   id: string
@@ -19,21 +21,42 @@ export interface Settings {
   defaultReminders: number[]
   /** Duracion minima de un hueco para que se considere aprovechable. */
   minFreeSlotMinutes: number
+  theme: Theme
+  accent: Accent
 }
-
-const KEY = 'cp.settings'
 
 export const DEFAULT_SETTINGS: Settings = {
   calendars: {},
   visible: { mine: true, hers: true, ours: true },
   defaultReminders: [30],
   minFreeSlotMinutes: 60,
+  theme: 'system',
+  accent: 'azul',
 }
 
-export function loadSettings(): Settings {
+const PREFIX = 'cp.settings'
+
+/**
+ * Clave de los ajustes de una cuenta. Sin correo se usa una clave suelta, que
+ * es la que se lee en el arranque antes de saber quien entra; cuando llega el
+ * perfil se migra a la clave de la cuenta.
+ */
+function keyFor(email?: string | null): string {
+  return email ? `${PREFIX}.${email.toLowerCase()}` : PREFIX
+}
+
+export function loadSettings(email?: string | null): Settings {
+  const stored = readAt(keyFor(email))
+  // Primera vez con esta cuenta: se heredan los ajustes sueltos del arranque
+  // para no perder el tema que ya se estaba usando.
+  if (!stored && email) return readAt(keyFor(null)) ?? DEFAULT_SETTINGS
+  return stored ?? DEFAULT_SETTINGS
+}
+
+function readAt(key: string): Settings | null {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return DEFAULT_SETTINGS
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<Settings>
     return {
       ...DEFAULT_SETTINGS,
@@ -42,13 +65,13 @@ export function loadSettings(): Settings {
       calendars: parsed.calendars ?? {},
     }
   } catch {
-    return DEFAULT_SETTINGS
+    return null
   }
 }
 
-export function saveSettings(s: Settings): void {
+export function saveSettings(s: Settings, email?: string | null): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s))
+    localStorage.setItem(keyFor(email), JSON.stringify(s))
   } catch {
     /* cuota llena o modo privado: la app sigue funcionando en memoria */
   }

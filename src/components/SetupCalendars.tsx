@@ -106,13 +106,13 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
       <div className="mx-auto max-w-lg">
         <h1 className="text-xl font-bold">Conectar los calendarios</h1>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/45">
+        <p className="mt-1.5 text-sm leading-relaxed text-subtle">
           Elige qué calendario de Google corresponde a cada uno. Si aún no
           existen, la app los crea por ti.
         </p>
 
         {loading ? (
-          <p className="mt-6 text-sm text-white/35">Cargando tus calendarios…</p>
+          <p className="mt-6 text-sm text-subtle">Cargando tus calendarios…</p>
         ) : (
           <div className="mt-5 flex flex-col gap-4">
             {OWNERS.map((owner) => {
@@ -122,12 +122,12 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
               return (
                 <div
                   key={owner}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5"
+                  className="rounded-2xl border border-line bg-surface p-3.5"
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
                     <span className="text-sm font-semibold">{style.label}</span>
-                    <span className="ml-auto text-[11px] text-white/30">{HINTS[owner]}</span>
+                    <span className="ml-auto text-[11px] text-subtle">{HINTS[owner]}</span>
                   </div>
 
                   <select
@@ -135,13 +135,13 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                     onChange={(e) =>
                       assign(owner, calendars.find((c) => c.id === e.target.value) ?? null)
                     }
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-sky-300/60"
+                    className="w-full appearance-none rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none focus:border-accent-line"
                   >
-                    <option value="" className="bg-[#122430]">
+                    <option value="" className="bg-surface">
                       — Sin asignar —
                     </option>
                     {calendars.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-[#122430]">
+                      <option key={c.id} value={c.id} className="bg-surface">
                         {c.summary}
                         {c.primary ? ' (principal)' : ''}
                         {c.accessRole === 'reader' ? ' · solo lectura' : ''}
@@ -154,7 +154,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                       type="button"
                       onClick={() => handleCreate(owner)}
                       disabled={busyOwner === owner}
-                      className="tap text-xs text-sky-200 underline decoration-sky-300/30 disabled:opacity-50"
+                      className="tap text-xs text-accent underline decoration-accent-line disabled:opacity-50"
                     >
                       Crear «{SUGGESTED[owner]}»
                     </button>
@@ -166,20 +166,20 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                           setShareTarget(shareTarget === owner ? null : owner)
                           setShareMsg(null)
                         }}
-                        className="tap text-xs text-white/40 underline decoration-white/20"
+                        className="tap text-xs text-subtle underline decoration-line"
                       >
                         Compartir…
                       </button>
                     )}
 
                     {current && !current.editable && (
-                      <span className="text-xs text-amber-300/70">solo lectura</span>
+                      <span className="text-xs text-warn">solo lectura</span>
                     )}
                   </div>
 
                   {shareTarget === owner && current && (
-                    <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="mb-2 text-[11px] leading-snug text-white/40">
+                    <div className="mt-3 rounded-xl border border-line bg-elevated p-3">
+                      <p className="mb-2 text-[11px] leading-snug text-subtle">
                         Da acceso a «{current.summary}» a otra cuenta de Google. Google le
                         enviará una invitación por correo.
                       </p>
@@ -189,7 +189,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                         value={shareEmail}
                         onChange={(e) => setShareEmail(e.target.value)}
                         placeholder="correo@gmail.com"
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-sm outline-none placeholder:text-white/25 focus:border-sky-300/60"
+                        className="w-full rounded-lg border border-line bg-elevated px-2.5 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
                       />
                       <div className="mt-2 flex gap-2">
                         {(
@@ -204,8 +204,8 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                             onClick={() => setShareRole(role)}
                             className={`tap flex-1 rounded-lg border py-1.5 text-xs transition ${
                               shareRole === role
-                                ? 'border-sky-300/50 bg-sky-400/20 text-sky-100'
-                                : 'border-white/10 text-white/45'
+                                ? 'border-accent-line bg-accent-soft text-accent'
+                                : 'border-line text-subtle'
                             }`}
                           >
                             {label}
@@ -216,12 +216,12 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                         type="button"
                         onClick={handleShare}
                         disabled={!shareEmail.includes('@') || busyOwner === owner}
-                        className="tap mt-2 w-full rounded-lg bg-sky-300 py-2 text-xs font-semibold text-slate-900 disabled:opacity-40"
+                        className="tap mt-2 w-full rounded-lg bg-accent py-2 text-xs font-semibold text-accent-fg disabled:opacity-40"
                       >
                         {busyOwner === owner ? 'Compartiendo…' : 'Compartir'}
                       </button>
                       {shareMsg && (
-                        <p className="mt-2 text-[11px] leading-snug text-white/55">{shareMsg}</p>
+                        <p className="mt-2 text-[11px] leading-snug text-muted">{shareMsg}</p>
                       )}
                     </div>
                   )}
@@ -232,7 +232,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
         )}
 
         {error && (
-          <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          <p className="mt-4 rounded-xl border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger">
             {error}
           </p>
         )}
@@ -241,7 +241,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
           <button
             type="button"
             onClick={refresh}
-            className="tap rounded-xl border border-white/10 py-2.5 text-sm text-white/55"
+            className="tap rounded-xl border border-line py-2.5 text-sm text-muted"
           >
             Recargar la lista
           </button>
@@ -250,7 +250,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
             <button
               type="button"
               onClick={onDone}
-              className="tap rounded-xl bg-sky-300 py-3 text-sm font-semibold text-slate-900"
+              className="tap rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg"
             >
               Volver al calendario
             </button>
@@ -259,7 +259,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
               type="button"
               disabled={!done}
               onClick={() => window.location.reload()}
-              className="tap rounded-xl bg-sky-300 py-3 text-sm font-semibold text-slate-900 disabled:opacity-35"
+              className="tap rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg disabled:opacity-35"
             >
               {done ? 'Empezar' : 'Asigna los tres calendarios'}
             </button>
@@ -268,7 +268,7 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
           <button
             type="button"
             onClick={onSignOut}
-            className="tap py-1 text-xs text-white/30 underline decoration-white/15"
+            className="tap py-1 text-xs text-subtle underline decoration-line"
           >
             Cerrar sesión
           </button>

@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import { ensureAnniversaries } from '../lib/anniversaries'
+import type { Profile } from '../lib/auth'
 import { RELATIONSHIP_START } from '../lib/config'
 import { clearEventCache, type Settings } from '../lib/storage'
+import {
+  ACCENTS,
+  ACCENT_LABELS,
+  ACCENT_SWATCH,
+  THEMES,
+  THEME_LABELS,
+  type Accent,
+  type Theme,
+} from '../lib/theme'
 import SetupCalendars from './SetupCalendars'
 
 const REMINDER_PRESETS = [
@@ -14,13 +24,21 @@ const REMINDER_PRESETS = [
 
 interface Props {
   settings: Settings
+  profile: Profile | null
   onChange: (patch: Partial<Settings>) => void
   onDone: () => void
   onSignOut: () => void
   onReload: () => void
 }
 
-export default function SettingsView({ settings, onChange, onDone, onSignOut, onReload }: Props) {
+export default function SettingsView({
+  settings,
+  profile,
+  onChange,
+  onDone,
+  onSignOut,
+  onReload,
+}: Props) {
   const [annivBusy, setAnnivBusy] = useState(false)
   const [annivMsg, setAnnivMsg] = useState<string | null>(null)
 
@@ -31,10 +49,11 @@ export default function SettingsView({ settings, onChange, onDone, onSignOut, on
     setAnnivBusy(true)
     setAnnivMsg(null)
     try {
-      const { created, skipped } = await ensureAnniversaries(oursId)
+      const { created, updated, skipped } = await ensureAnniversaries(oursId)
       const parts: string[] = []
       if (created.length) parts.push(`Añadido ${created.join(' y ')}.`)
-      if (skipped.length) parts.push(`Ya estaba puesto ${skipped.join(' y ')}.`)
+      if (updated.length) parts.push(`Corregido ${updated.join(' y ')}.`)
+      if (skipped.length) parts.push(`Ya estaba bien ${skipped.join(' y ')}.`)
       setAnnivMsg(parts.join(' '))
       clearEventCache()
       onReload()
@@ -54,41 +73,106 @@ export default function SettingsView({ settings, onChange, onDone, onSignOut, on
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <SetupCalendars
-        settings={settings}
-        onChange={onChange}
-        onDone={onDone}
-        onSignOut={onSignOut}
-      />
+      <div className="mx-auto max-w-lg px-4 pt-5">
+        {/* Quien esta usando la app, y de quien son estos ajustes. */}
+        {profile && (
+          <section className="mb-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
+            {profile.picture ? (
+              <img
+                src={profile.picture}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-10 w-10 shrink-0 rounded-full"
+              />
+            ) : (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
+                {profile.givenName.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">{profile.name}</div>
+              <div className="truncate text-[11px] text-subtle">{profile.email}</div>
+            </div>
+          </section>
+        )}
 
-      <div className="mx-auto max-w-lg px-4 pb-8">
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+        <section className="rounded-2xl border border-line bg-surface p-3.5">
+          <h2 className="text-sm font-semibold">Aspecto</h2>
+          <p className="mt-1 text-[11px] leading-snug text-subtle">
+            Es tuyo, no del calendario: cada uno lo elige en su cuenta y no
+            afecta a lo que ve el otro.
+          </p>
+
+          <div className="mt-3 text-[11px] font-medium text-muted">Tema</div>
+          <div className="mt-1.5 grid grid-cols-3 gap-2">
+            {THEMES.map((t: Theme) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onChange({ theme: t })}
+                className={`tap rounded-xl border py-2 text-xs font-medium transition ${
+                  settings.theme === t
+                    ? 'border-accent-line bg-accent-soft text-accent'
+                    : 'border-line text-subtle'
+                }`}
+              >
+                {THEME_LABELS[t]}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 text-[11px] font-medium text-muted">Color</div>
+          <div className="mt-1.5 grid grid-cols-3 gap-2">
+            {ACCENTS.map((a: Accent) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => onChange({ accent: a })}
+                className={`tap flex items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-medium transition ${
+                  settings.accent === a
+                    ? 'border-accent-line bg-accent-soft text-accent'
+                    : 'border-line text-subtle'
+                }`}
+              >
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{ background: ACCENT_SWATCH[a] }}
+                />
+                {ACCENT_LABELS[a]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] leading-snug text-subtle">
+            El color de cada persona en los eventos no cambia, para que los dos
+            veáis el mismo color para la misma persona.
+          </p>
+        </section>
+
+        <section className="mt-4 rounded-2xl border border-line bg-surface p-3.5">
           <h2 className="text-sm font-semibold">Aniversarios</h2>
-          <p className="mt-1 text-[11px] leading-snug text-white/40">
+          <p className="mt-1 text-[11px] leading-snug text-subtle">
             Crea en «Nosotros» dos eventos recurrentes: uno cada día{' '}
             {RELATIONSHIP_START.getDate()} del mes y otro cada{' '}
-            {RELATIONSHIP_START.getDate()} de noviembre. Con aviso, para que os
-            llegue a los dos móviles.
+            {RELATIONSHIP_START.getDate()} de noviembre. El mensual se salta
+            noviembre para que ese día no salgan los dos.
           </p>
           <button
             type="button"
             onClick={handleAnniversaries}
             disabled={!oursId || annivBusy}
-            className="tap mt-2.5 w-full rounded-xl border border-emerald-300/40 bg-emerald-400/15 py-2.5 text-sm font-medium text-emerald-50 disabled:opacity-40"
+            className="tap mt-2.5 w-full rounded-xl border border-accent-line bg-accent-soft py-2.5 text-sm font-medium text-accent disabled:opacity-40"
           >
-            {annivBusy ? 'Creando…' : 'Crear los aniversarios'}
+            {annivBusy ? 'Creando…' : 'Crear los aniversarios ❤️'}
           </button>
           {!oursId && (
-            <p className="mt-2 text-[11px] text-amber-300/70">
-              Asigna primero el calendario «Nosotros».
-            </p>
+            <p className="mt-2 text-[11px] text-warn">Asigna primero el calendario «Nosotros».</p>
           )}
-          {annivMsg && <p className="mt-2 text-[11px] leading-snug text-white/55">{annivMsg}</p>}
+          {annivMsg && <p className="mt-2 text-[11px] leading-snug text-muted">{annivMsg}</p>}
         </section>
 
-        <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+        <section className="mt-4 rounded-2xl border border-line bg-surface p-3.5">
           <h2 className="text-sm font-semibold">Avisos por defecto</h2>
-          <p className="mt-1 text-[11px] text-white/40">
+          <p className="mt-1 text-[11px] text-subtle">
             Los que se marcan solos al crear un evento nuevo.
           </p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -101,8 +185,8 @@ export default function SettingsView({ settings, onChange, onDone, onSignOut, on
                   onClick={() => toggleReminder(minutes)}
                   className={`tap rounded-full border px-2.5 py-1 text-xs transition ${
                     active
-                      ? 'border-emerald-300/50 bg-emerald-400/20 text-emerald-100'
-                      : 'border-white/10 text-white/45'
+                      ? 'border-accent-line bg-accent-soft text-accent'
+                      : 'border-line text-subtle'
                   }`}
                 >
                   {active ? '🔔 ' : ''}
@@ -112,13 +196,22 @@ export default function SettingsView({ settings, onChange, onDone, onSignOut, on
             })}
           </div>
         </section>
+      </div>
 
-        <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+      <SetupCalendars
+        settings={settings}
+        onChange={onChange}
+        onDone={onDone}
+        onSignOut={onSignOut}
+      />
+
+      <div className="mx-auto max-w-lg px-4 pb-8">
+        <section className="rounded-2xl border border-line bg-surface p-3.5">
           <h2 className="text-sm font-semibold">Datos guardados</h2>
-          <p className="mt-1 text-[11px] leading-snug text-white/40">
-            La app no tiene servidor. Lo único que guarda en este móvil es qué
-            calendario es de quién, y una copia de los eventos para poder
-            consultarlos sin conexión.
+          <p className="mt-1 text-[11px] leading-snug text-subtle">
+            La app no tiene servidor. En este móvil solo guarda qué calendario
+            es de quién, tus preferencias de aspecto y una copia de los eventos
+            para poder consultarlos sin conexión.
           </p>
           <button
             type="button"
@@ -127,7 +220,7 @@ export default function SettingsView({ settings, onChange, onDone, onSignOut, on
               onReload()
               setAnnivMsg('Copia local borrada.')
             }}
-            className="tap mt-2.5 w-full rounded-xl border border-white/10 py-2.5 text-sm text-white/55"
+            className="tap mt-2.5 w-full rounded-xl border border-line py-2.5 text-sm text-muted"
           >
             Borrar la copia sin conexión
           </button>

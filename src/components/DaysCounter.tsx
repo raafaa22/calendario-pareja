@@ -27,22 +27,22 @@ export default function DaysCounter() {
   ].filter(Boolean) as string[]
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-gradient-to-r from-sky-400/15 to-emerald-400/15 px-4 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-accent-line bg-accent-soft px-4 py-2.5">
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold tabular-nums tracking-tight text-sky-50">
+          <span className="text-2xl font-bold tabular-nums tracking-tight text-fg">
             {days.toLocaleString('es-ES')}
           </span>
-          <span className="text-sm text-white/55">días juntos</span>
+          <span className="text-sm text-muted">días juntos</span>
         </div>
         {parts.length > 0 && (
-          <div className="mt-0.5 text-[11px] text-white/35">{formatList(parts)}</div>
+          <div className="mt-0.5 text-[11px] text-subtle">{formatList(parts)}</div>
         )}
       </div>
 
-      <div className="shrink-0 text-right text-[10px] leading-tight text-white/35">
+      <div className="shrink-0 text-right text-[10px] leading-tight text-subtle">
         {nextMonthlyIn === 0 ? (
-          <span className="text-emerald-200">Hoy hacéis meses</span>
+          <span className="text-accent">Hoy hacéis meses</span>
         ) : (
           <>
             Siguiente mes

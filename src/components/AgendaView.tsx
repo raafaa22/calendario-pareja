@@ -19,7 +19,7 @@ export default function AgendaView({ from, to, events, onOpenEvent }: Props) {
   if (!days.length) {
     return (
       <div className="flex flex-1 items-center justify-center px-8 text-center">
-        <p className="text-sm text-white/40">No hay eventos en este periodo.</p>
+        <p className="text-sm text-subtle">No hay eventos en este periodo.</p>
       </div>
     )
   }
@@ -28,10 +28,10 @@ export default function AgendaView({ from, to, events, onOpenEvent }: Props) {
     <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
       {days.map(({ day, list }) => (
         <section key={day.toISOString()} className="pt-3">
-          <h3 className="sticky top-0 z-10 -mx-3 mb-1.5 bg-[#0d1b24]/95 px-3 py-1 text-xs font-semibold backdrop-blur">
+          <h3 className="sticky top-0 z-10 -mx-3 mb-1.5 bg-bg/95 px-3 py-1 text-xs font-semibold backdrop-blur">
             <span
               className={
-                isToday(day) ? 'text-sky-200' : 'text-white/60 first-letter:uppercase'
+                isToday(day) ? 'text-accent' : 'text-muted first-letter:uppercase'
               }
             >
               {isToday(day) ? 'Hoy' : isTomorrow(day) ? 'Mañana' : fmt.dayFull(day)}

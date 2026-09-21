@@ -112,21 +112,25 @@ export async function shareCalendar(
 }
 
 /**
- * Eventos de un calendario en un rango. `singleEvents` expande las series, que
- * es lo que interesa para pintar una rejilla: cada clase semanal llega como una
- * ocurrencia con su propia fecha.
+ * Eventos de un calendario en un rango. Por defecto expande las series, que es
+ * lo que interesa para pintar una rejilla: cada clase semanal llega como una
+ * ocurrencia con su propia fecha. Con `expandSeries: false` llegan los eventos
+ * maestros con su RRULE, que es lo que hay que tocar para editar una serie.
  */
 export async function listEvents(
   calendarId: string,
   timeMin: Date,
   timeMax: Date,
+  opts: { expandSeries?: boolean } = {},
 ): Promise<GCalEvent[]> {
+  const expand = opts.expandSeries !== false
   const params = new URLSearchParams({
     timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
-    singleEvents: 'true',
-    orderBy: 'startTime',
+    singleEvents: String(expand),
     maxResults: '2500',
+    // orderBy=startTime solo vale con las series expandidas.
+    ...(expand ? { orderBy: 'startTime' } : {}),
   })
   const res = await api<{ items?: GCalEvent[] }>(
     `/calendars/${encodeURIComponent(calendarId)}/events?${params}`,

@@ -24,7 +24,7 @@ export const TAGS: TagDef[] = [
   { id: 'cita', label: 'Cita', icon: '🎟️' },
   { id: 'viaje', label: 'Viaje', icon: '✈️' },
   { id: 'cumple', label: 'Cumpleaños', icon: '🎂' },
-  { id: 'aniversario', label: 'Aniversario', icon: '🎉' },
+  { id: 'aniversario', label: 'Aniversario', icon: '❤️' },
   { id: 'familia', label: 'Familia', icon: '👨‍👩‍👧' },
   { id: 'amigos', label: 'Amigos', icon: '🍻' },
   { id: 'recado', label: 'Recado', icon: '📋' },

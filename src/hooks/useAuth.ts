@@ -1,13 +1,30 @@
 import { useCallback, useEffect, useState } from 'react'
-import { isSignedIn, onAuthChange, signIn, signOut, trySilentSignIn } from '../lib/auth'
+import {
+  getProfile,
+  isSignedIn,
+  onAuthChange,
+  signIn,
+  signOut,
+  trySilentSignIn,
+  type Profile,
+} from '../lib/auth'
 import { GOOGLE_CLIENT_ID } from '../lib/config'
 
 export function useAuth() {
   const [signedIn, setSignedIn] = useState(isSignedIn)
+  const [profile, setProfile] = useState<Profile | null>(getProfile)
   const [checking, setChecking] = useState(true)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => onAuthChange(setSignedIn), [])
+  useEffect(
+    () =>
+      onAuthChange(() => {
+        setSignedIn(isSignedIn())
+        setProfile(getProfile())
+      }),
+    [],
+  )
 
   // Al arrancar se intenta renovar el token sin molestar. Solo si falla se
   // muestra la pantalla de login.
@@ -28,12 +45,15 @@ export function useAuth() {
 
   const login = useCallback(async () => {
     setError(null)
+    setBusy(true)
     try {
       await signIn()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se ha podido iniciar sesión')
+    } finally {
+      setBusy(false)
     }
   }, [])
 
-  return { signedIn, checking, error, login, logout: signOut }
+  return { signedIn, profile, checking, busy, error, login, logout: signOut }
 }

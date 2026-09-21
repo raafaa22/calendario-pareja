@@ -4,10 +4,18 @@ export const RELATIONSHIP_START = new Date(2022, 10, 22) // 22/11/2022
 /** Dia del mes del aniversario mensual, derivado de la fecha de inicio. */
 export const ANNIVERSARY_DAY = RELATIONSHIP_START.getDate()
 
-/** Permiso minimo necesario: leer y escribir eventos en los calendarios. */
+/**
+ * Permisos que pide la app:
+ * - calendar / calendar.events: leer y escribir en los calendarios.
+ * - userinfo.profile / .email: el nombre y la foto para personalizar la
+ *   interfaz, y el correo para guardar los ajustes de cada uno por separado.
+ *   Son permisos no sensibles.
+ */
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
@@ -18,7 +26,7 @@ export type Owner = (typeof OWNERS)[number]
 
 export interface OwnerStyle {
   label: string
-  /** Clases de Tailwind para el chip del evento. */
+  /** Clase del chip del evento (definida en index.css). */
   chip: string
   /** Punto de color que identifica a la persona. */
   dot: string
@@ -26,28 +34,15 @@ export interface OwnerStyle {
 }
 
 /**
- * Azul para uno, verde para el otro, y la mezcla de los dos para lo conjunto.
- * Todos en tonos pastel sobre fondo oscuro.
+ * Azul para uno, verde para el otro y turquesa para lo conjunto. Los valores
+ * de cada clase estan en index.css, con una version para tema claro y otra
+ * para oscuro. No dependen del acento elegido: el color de cada persona es
+ * identidad, y debe ser el mismo en los dos moviles.
  */
 export const OWNER_STYLES: Record<Owner, OwnerStyle> = {
-  mine: {
-    label: 'Yo',
-    chip: 'bg-sky-400/15 text-sky-100 border-sky-300/35',
-    dot: 'bg-sky-300',
-    text: 'text-sky-200',
-  },
-  hers: {
-    label: 'Ella',
-    chip: 'bg-emerald-400/15 text-emerald-50 border-emerald-300/35',
-    dot: 'bg-emerald-300',
-    text: 'text-emerald-200',
-  },
-  ours: {
-    label: 'Nosotros',
-    chip: 'bg-gradient-to-br from-sky-400/25 to-emerald-400/25 text-teal-50 border-teal-200/70',
-    dot: 'bg-gradient-to-br from-sky-300 to-emerald-300',
-    text: 'text-teal-200',
-  },
+  mine: { label: 'Yo', chip: 'chip-mine', dot: 'dot-mine', text: 'fg-mine' },
+  hers: { label: 'Ella', chip: 'chip-hers', dot: 'dot-hers', text: 'fg-hers' },
+  ours: { label: 'Nosotros', chip: 'chip-ours', dot: 'dot-ours', text: 'fg-ours' },
 }
 
 /** Ventana del dia que se considera "tiempo util" al buscar huecos libres. */

@@ -10,7 +10,12 @@ si ella apunta una clase desde la app de Google, sale aquí, y al revés.
 
 ## Qué hace
 
-- Tres calendarios en uno: **Yo** (azul), **Ella** (verde) y **Nosotros** (los dos).
+- Tres calendarios en uno: **Yo** (azul), **Ella** (verde) y **Nosotros** (turquesa).
+- **Tema claro y oscuro** (o automático, siguiendo al móvil) y **color de acento**
+  a elegir entre azul, rosa y verde. Cada uno lo elige en su cuenta y no afecta
+  al otro; el color de cada persona en los eventos no cambia, para que los dos
+  veáis el mismo color para la misma persona.
+- Saluda por el nombre de la cuenta con la que has entrado.
 - Vistas de **mes**, **semana**, **agenda** y **huecos**.
 - **Huecos**: cruza los tres calendarios y enseña los ratos en los que nadie
   tiene nada, para saber cuándo podéis quedar. Al tocar uno se crea el evento ahí.
@@ -20,7 +25,8 @@ si ella apunta una clase desde la app de Google, sale aquí, y al revés.
 - **Etiquetas** (clase, trabajo, gym, médico, fisio, barbero, cena…) que pintan
   un icono en cada evento. Se guardan como `#etiqueta` al final de la descripción,
   así que siguen ahí aunque edites el evento desde la app de Google.
-- **Aniversarios** mensual y anual, creados con un botón desde los ajustes.
+- **Aniversarios** mensual y anual con corazón, creados con un botón desde los
+  ajustes. El mensual salta noviembre, así el 22 de noviembre no salen los dos.
 - Contador de días juntos desde el 22/11/2022.
 - Se puede consultar sin conexión (lo último cargado). Para crear o editar hace
   falta red.
@@ -37,7 +43,13 @@ Esto hay que hacerlo con tu cuenta; no se puede automatizar.
 3. **APIs y servicios → Pantalla de consentimiento de OAuth**:
    - Tipo de usuario: **Externo**.
    - Rellena nombre de la app, tu correo de asistencia y tu correo de contacto.
-   - En **Permisos**, añade `https://www.googleapis.com/auth/calendar`.
+   - En **Permisos**, añade los cuatro:
+     `https://www.googleapis.com/auth/calendar`,
+     `https://www.googleapis.com/auth/calendar.events`,
+     `https://www.googleapis.com/auth/userinfo.profile` y
+     `https://www.googleapis.com/auth/userinfo.email`.
+     Los dos primeros son los del calendario; los de `userinfo` son para el
+     nombre y la foto de la interfaz, y son permisos no sensibles.
    - En **Usuarios de prueba**, añade **tu correo y el suyo**.
 4. **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**:
    - Tipo: **Aplicación web**.
@@ -134,22 +146,46 @@ src/
     tags.ts          Etiquetas dentro de la descripción
     freeSlots.ts     Cálculo de huecos libres
     dates.ts         Fechas y formatos en español
-    storage.ts       Ajustes y copia sin conexión
+    theme.ts         Tema claro/oscuro y color de acento
+    storage.ts       Ajustes por cuenta y copia sin conexión
     anniversaries.ts Aniversarios mensual y anual
     config.ts        Fecha de inicio, colores, permisos
   hooks/             Sesión, ajustes y carga de eventos
   components/        Vistas y formulario
 ```
 
+### Sobre no tener que entrar todo el rato
+
+Una app sin servidor tiene un techo aquí que conviene conocer: Google solo emite
+tokens de **una hora** y no entrega *refresh token* a una aplicación que no
+puede guardar un secreto. No hay forma de saltárselo sin montar un backend.
+
+Lo que sí hace la app para que no se note:
+
+1. Guarda el token en `localStorage`, así cerrar la app y volver a abrirla
+   dentro de esa hora no pide nada.
+2. Recuerda con qué cuenta entraste y se lo pasa a Google como `hint`, de modo
+   que la renovación silenciosa acierta de cuenta sin preguntar, incluso con
+   varias cuentas abiertas en el navegador.
+3. Renueva en silencio al arrancar y cada vez que la API responde 401.
+
+En la práctica el botón de Google solo reaparece si Google cierra su propia
+sesión en ese navegador o si cierras sesión a mano. Si te pasa a menudo,
+publica la app en https://console.cloud.google.com/auth/audience.
+
 ### Decisiones que conviene conocer
 
-- **El token vive una hora** y se renueva en silencio mientras la sesión de
-  Google siga abierta. Se guarda en `sessionStorage`, nunca en disco.
+- **Los colores** salen todos de fichas semánticas en `src/index.css`, que
+  cambian según los atributos `data-theme` y `data-accent` del `<html>`. Los
+  componentes no llevan ni un color a mano: por eso cambiar de tema es
+  instantáneo y no hay ninguna vista que se quede a medias.
 - Los eventos se piden con `singleEvents=true`, así cada repetición llega ya
   expandida con su fecha. Google se encarga de interpretar las reglas.
 - Al editar una repetición se puede tocar **solo ese día** o **toda la serie**.
   Si cambias la hora de toda la serie, se conserva la fecha de inicio original
   en lugar de moverla al día que estabas viendo.
-- Lo único que se guarda en el móvil es qué calendario es de quién y una copia
-  de los eventos para poder consultarlos sin conexión. Se puede borrar desde
-  los ajustes.
+- **Los ajustes se guardan por cuenta de Google.** Tema, acento, calendarios y
+  filtros son de cada uno, así que si alguna vez entráis los dos desde el mismo
+  móvil no os pisáis.
+- Lo único que se guarda en el móvil es eso más una copia de los eventos para
+  poder consultarlos sin conexión. Se puede borrar desde los ajustes.

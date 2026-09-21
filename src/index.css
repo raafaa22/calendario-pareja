@@ -1,15 +1,177 @@
 @import 'tailwindcss';
 
-@theme {
+/*
+ * Todos los colores de la app pasan por estas fichas semanticas. Los valores
+ * reales se definen mas abajo segun dos atributos del <html>:
+ *   data-theme  = light | dark
+ *   data-accent = azul | rosa | verde
+ * Asi cambiar de tema o de acento es cambiar un atributo, sin tocar ni una
+ * clase de los componentes.
+ *
+ * `inline` hace que Tailwind use la variable directamente en la utilidad, que
+ * es lo que permite que el cambio se note al instante.
+ */
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-elevated: var(--c-elevated);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-subtle: var(--c-subtle);
+  --color-accent: var(--c-accent);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-line: var(--c-accent-line);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-danger-line: var(--c-danger-line);
+  --color-danger-strong: var(--c-danger-strong);
+  --color-danger-strong-fg: var(--c-danger-strong-fg);
+  --color-warn: var(--c-warn);
+  --color-warn-soft: var(--c-warn-soft);
+
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-:root {
+/* ---------- Neutros: tema oscuro ---------- */
+:root,
+:root[data-theme='dark'] {
   color-scheme: dark;
-  /* Alturas del area segura en iPhone, para que la barra inferior no quede
-     debajo del indicador de inicio. */
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --c-bg: #0d1b24;
+  --c-surface: #122430;
+  --c-elevated: #172d3a;
+  --c-line: rgb(255 255 255 / 0.11);
+  --c-fg: #e4eef2;
+  --c-muted: rgb(228 238 242 / 0.62);
+  --c-subtle: rgb(228 238 242 / 0.38);
+  --c-danger: #fca5a5;
+  --c-danger-soft: rgb(248 113 113 / 0.14);
+  --c-danger-line: rgb(248 113 113 / 0.34);
+  --c-danger-strong: #dc2626;
+  --c-danger-strong-fg: #ffffff;
+  --c-warn: #fcd34d;
+  --c-warn-soft: rgb(251 191 36 / 0.14);
+
+  /* Colores de persona. Son identidad, no decoracion: no cambian con el
+     acento, para que los dos veais el mismo color para la misma persona. */
+  --o-mine-bg: rgb(56 189 248 / 0.16);
+  --o-mine-fg: #cfe9fb;
+  --o-mine-line: rgb(125 211 252 / 0.38);
+  --o-mine-dot: #7dd3fc;
+
+  --o-hers-bg: rgb(52 211 153 / 0.16);
+  --o-hers-fg: #c9f2e2;
+  --o-hers-line: rgb(110 231 183 / 0.38);
+  --o-hers-dot: #6ee7b7;
+
+  --o-ours-bg: rgb(45 212 191 / 0.2);
+  --o-ours-fg: #d6f7f3;
+  --o-ours-line: rgb(153 246 228 / 0.62);
+  --o-ours-dot: #5eead4;
+}
+
+/* ---------- Neutros: tema claro ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --c-bg: #f3f7f9;
+  --c-surface: #ffffff;
+  --c-elevated: #eaf0f4;
+  --c-line: rgb(13 27 36 / 0.13);
+  --c-fg: #10222c;
+  --c-muted: rgb(16 34 44 / 0.66);
+  --c-subtle: rgb(16 34 44 / 0.45);
+  --c-danger: #b91c1c;
+  --c-danger-soft: rgb(220 38 38 / 0.09);
+  --c-danger-line: rgb(220 38 38 / 0.28);
+  --c-danger-strong: #dc2626;
+  --c-danger-strong-fg: #ffffff;
+  --c-warn: #a16207;
+  --c-warn-soft: rgb(217 119 6 / 0.1);
+
+  --o-mine-bg: #e0f2fe;
+  --o-mine-fg: #075985;
+  --o-mine-line: #7dd3fc;
+  --o-mine-dot: #0ea5e9;
+
+  --o-hers-bg: #dcfce7;
+  --o-hers-fg: #065f46;
+  --o-hers-line: #6ee7b7;
+  --o-hers-dot: #10b981;
+
+  --o-ours-bg: #cffafe;
+  --o-ours-fg: #115e59;
+  --o-ours-line: #14b8a6;
+  --o-ours-dot: #0d9488;
+}
+
+/* ---------- Acentos ---------- */
+:root[data-accent='azul'][data-theme='dark'],
+:root[data-accent='azul']:not([data-theme='light']) {
+  --c-accent: #7dd3fc;
+  --c-accent-fg: #062a3a;
+  --c-accent-soft: rgb(125 211 252 / 0.17);
+  --c-accent-line: rgb(125 211 252 / 0.45);
+}
+:root[data-accent='azul'][data-theme='light'] {
+  --c-accent: #0284c7;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: rgb(2 132 199 / 0.11);
+  --c-accent-line: rgb(2 132 199 / 0.34);
+}
+
+:root[data-accent='rosa'][data-theme='dark'],
+:root[data-accent='rosa']:not([data-theme='light']) {
+  --c-accent: #f9a8d4;
+  --c-accent-fg: #43092a;
+  --c-accent-soft: rgb(249 168 212 / 0.17);
+  --c-accent-line: rgb(249 168 212 / 0.45);
+}
+:root[data-accent='rosa'][data-theme='light'] {
+  --c-accent: #db2777;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: rgb(219 39 119 / 0.09);
+  --c-accent-line: rgb(219 39 119 / 0.3);
+}
+
+:root[data-accent='verde'][data-theme='dark'],
+:root[data-accent='verde']:not([data-theme='light']) {
+  --c-accent: #6ee7b7;
+  --c-accent-fg: #04291d;
+  --c-accent-soft: rgb(110 231 183 / 0.17);
+  --c-accent-line: rgb(110 231 183 / 0.45);
+}
+:root[data-accent='verde'][data-theme='light'] {
+  --c-accent: #059669;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: rgb(5 150 105 / 0.11);
+  --c-accent-line: rgb(5 150 105 / 0.3);
+}
+
+/* Fondo rosa muy tenue cuando el acento es rosa: es lo que hace que la
+   interfaz entera se lea "en tonos rosas" y no solo los botones. */
+:root[data-accent='rosa'][data-theme='light'] {
+  --c-bg: #fdf4f8;
+  --c-surface: #ffffff;
+  --c-elevated: #fbe9f1;
+  --c-line: rgb(80 20 50 / 0.12);
+  --c-fg: #2e0f20;
+  --c-muted: rgb(46 15 32 / 0.66);
+  --c-subtle: rgb(46 15 32 / 0.45);
+}
+:root[data-accent='rosa'][data-theme='dark'],
+:root[data-accent='rosa']:not([data-theme='light']) {
+  --c-bg: #1a0d16;
+  --c-surface: #26131f;
+  --c-elevated: #301826;
+  --c-fg: #f6e6ef;
+  --c-muted: rgb(246 230 239 / 0.62);
+  --c-subtle: rgb(246 230 239 / 0.38);
+}
+
+:root[data-accent='verde'][data-theme='light'] {
+  --c-bg: #f2f9f5;
+  --c-elevated: #e5f1ea;
 }
 
 html,
@@ -20,8 +182,8 @@ body,
 
 body {
   margin: 0;
-  background: #0d1b24;
-  color: #e4eef2;
+  background: var(--c-bg);
+  color: var(--c-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   /* Evita el rebote elastico de iOS sobre el fondo de la pagina. */
@@ -33,6 +195,60 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Alturas del area segura en iPhone, para que la barra inferior no quede
+   debajo del indicador de inicio. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+ * Chips y puntos de persona. En CSS y no con utilidades de Tailwind porque
+ * cada uno necesita tres colores distintos por tema, y con opacidades sobre
+ * blanco no se puede hacer legible en claro y en oscuro a la vez.
+ */
+.chip-mine,
+.chip-hers,
+.chip-ours {
+  border-width: 1px;
+  border-style: solid;
+}
+.chip-mine {
+  background: var(--o-mine-bg);
+  color: var(--o-mine-fg);
+  border-color: var(--o-mine-line);
+}
+.chip-hers {
+  background: var(--o-hers-bg);
+  color: var(--o-hers-fg);
+  border-color: var(--o-hers-line);
+}
+.chip-ours {
+  background: var(--o-ours-bg);
+  color: var(--o-ours-fg);
+  border-color: var(--o-ours-line);
+}
+
+.dot-mine {
+  background: var(--o-mine-dot);
+}
+.dot-hers {
+  background: var(--o-hers-dot);
+}
+.dot-ours {
+  background: var(--o-ours-dot);
+}
+
+.fg-mine {
+  color: var(--o-mine-dot);
+}
+.fg-hers {
+  color: var(--o-hers-dot);
+}
+.fg-ours {
+  color: var(--o-ours-dot);
 }
 
 @layer utilities {
@@ -48,9 +264,9 @@ body {
   }
 }
 
-/* Los inputs nativos de fecha/hora en iOS heredan un fondo blanco ilegible. */
+/* Los selectores nativos de fecha y hora siguen al tema activo. */
 input[type='datetime-local'],
 input[type='date'],
 input[type='time'] {
-  color-scheme: dark;
+  color-scheme: inherit;
 }
