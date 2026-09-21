@@ -1,6 +1,7 @@
 import { togetherBreakdown } from '../lib/dates'
 
 interface Props {
+  appName: string
   onLogin: () => void
   error: string | null
   busy: boolean
@@ -8,14 +9,14 @@ interface Props {
   knownName?: string
 }
 
-export default function Login({ onLogin, error, busy, knownName }: Props) {
+export default function Login({ appName, onLogin, error, busy, knownName }: Props) {
   const { days } = togetherBreakdown()
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 text-center">
       <div>
-        <div className="mx-auto h-14 w-14 rounded-2xl bg-accent" />
-        <h1 className="mt-4 text-2xl font-bold">Nuestro calendario</h1>
+        <div className="mx-auto h-14 w-14 rounded-[20px] bg-accent" />
+        <h1 className="mt-4 text-2xl font-extrabold">{appName}</h1>
         <p className="mt-1.5 text-sm text-subtle">{days.toLocaleString('es-ES')} días juntos</p>
       </div>
 

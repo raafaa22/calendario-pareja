@@ -97,6 +97,14 @@ export async function createCalendar(summary: string): Promise<GCalCalendar> {
 }
 
 /**
+ * Borra un calendario de la cuenta, con todos sus eventos. Irreversible: solo
+ * se llama desde un boton con doble confirmacion.
+ */
+export async function deleteCalendar(calendarId: string): Promise<void> {
+  await api(`/calendars/${encodeURIComponent(calendarId)}`, { method: 'DELETE' })
+}
+
+/**
  * Comparte un calendario con otra cuenta. `writer` permite crear y editar
  * eventos; `reader` solo consultar.
  */

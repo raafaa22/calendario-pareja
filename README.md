@@ -10,21 +10,30 @@ si ella apunta una clase desde la app de Google, sale aquí, y al revés.
 
 ## Qué hace
 
-- Tres calendarios en uno: **Yo** (azul), **Ella** (verde) y **Nosotros** (turquesa).
-- **Tema claro y oscuro** (o automático, siguiendo al móvil) y **color de acento**
-  a elegir entre azul, rosa y verde. Cada uno lo elige en su cuenta y no afecta
-  al otro; el color de cada persona en los eventos no cambia, para que los dos
-  veáis el mismo color para la misma persona.
+- Tres calendarios en uno. **El nombre de cada uno es editable** («Rafa»,
+  «Ana», «Los dos»…), y se puede quitar de la app o borrar de Google.
+- **Cada uno marca cuál de los dos es él**, así en los dos móviles sale «Yo» en
+  el calendario correcto (ver más abajo).
+- **El nombre del calendario** también se cambia desde los ajustes.
+- **Tema claro y oscuro** (o automático, siguiendo al móvil) y cuatro juegos de
+  **color**: azul, rosa, verde o los que tú elijas. Cada uno lo configura en su
+  cuenta y no afecta al otro.
 - Saluda por el nombre de la cuenta con la que has entrado.
-- Vistas de **mes**, **semana**, **agenda** y **huecos**.
+- Vistas de **mes** (con el nombre de cada evento), **semana**, **agenda** y
+  **huecos**.
 - **Huecos**: cruza los tres calendarios y enseña los ratos en los que nadie
   tiene nada, para saber cuándo podéis quedar. Al tocar uno se crea el evento ahí.
-- Repeticiones: diaria, semanal, **semana sí / semana no** (para las prácticas),
-  mensual y anual, con días de la semana concretos y fecha de fin.
+- Repeticiones con atajos (diaria, semanal, **semana sí / semana no**, mensual,
+  anual) y un modo **personalizado**: cada N días/semanas/meses/años, en los
+  días de la semana que elijas, y terminando nunca, en una fecha o tras N
+  repeticiones.
 - **Avisos** que llegan como notificación de Google Calendar al móvil.
-- **Etiquetas** (clase, trabajo, gym, médico, fisio, barbero, cena…) que pintan
-  un icono en cada evento. Se guardan como `#etiqueta` al final de la descripción,
-  así que siguen ahí aunque edites el evento desde la app de Google.
+- **Emoji propio** por evento, elegido de una lista o pegando el que quieras.
+  Si no eliges ninguno se usa el de la etiqueta.
+- **Etiquetas** (clase, trabajo, gym, médico, fisio, barbero, cena…). Tanto las
+  etiquetas como el emoji se guardan al final de la descripción (`#etiqueta`,
+  `[emoji:🍕]`), así que siguen ahí aunque edites el evento desde la app de
+  Google.
 - **Aniversarios** mensual y anual con corazón, creados con un botón desde los
   ajustes. El mensual salta noviembre, así el 22 de noviembre no salen los dos.
 - Contador de días juntos desde el 22/11/2022.
@@ -130,7 +139,7 @@ iPhone.
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Compila a `dist/` |
 | `npm run preview` | Sirve lo compilado |
-| `npm test` | Pruebas de repeticiones, etiquetas y huecos |
+| `npm test` | Pruebas de repeticiones, etiquetas, emoji, colores y huecos |
 | `npm run typecheck` | Comprueba los tipos |
 
 ## Cómo está montado
@@ -146,7 +155,9 @@ src/
     tags.ts          Etiquetas dentro de la descripción
     freeSlots.ts     Cálculo de huecos libres
     dates.ts         Fechas y formatos en español
-    theme.ts         Tema claro/oscuro y color de acento
+    theme.ts         Tema claro/oscuro, juegos de color y mezcla de tonos
+    owners.ts        Quién es quién y nombre de cada carril
+    labels.tsx       Los nombres, por contexto de React
     storage.ts       Ajustes por cuenta y copia sin conexión
     anniversaries.ts Aniversarios mensual y anual
     config.ts        Fecha de inicio, colores, permisos
@@ -173,19 +184,94 @@ En la práctica el botón de Google solo reaparece si Google cierra su propia
 sesión en ese navegador o si cierras sesión a mano. Si te pasa a menudo,
 publica la app en https://console.cloud.google.com/auth/audience.
 
+### Quién es quién
+
+Los tres carriles (`mine`, `hers`, `ours`) son **fijos**: apuntan siempre a los
+mismos calendarios de Google en los dos móviles. No son «el mío» y «el suyo»
+según quién mire, porque entonces cada uno vería un calendario distinto bajo el
+mismo nombre.
+
+Por eso hay un ajuste, `me`, que dice cuál de los dos carriles personales es la
+persona que ha entrado. Se marca con el botón **«Este soy yo»** en la pantalla
+de calendarios, y de ahí salen:
+
+- El nombre por defecto de cada carril: **«Yo»** para el tuyo, **«Mi pareja»**
+  para el otro, **«Nosotros»** para el común. El mismo evento sale como «Yo» en
+  un móvil y como «Mi pareja» en el otro.
+- El nombre que propone el botón de crear calendario («Mi agenda» / «Su agenda»).
+
+Como el ajuste se guarda **por cuenta de Google**, cada uno lo marca una vez en
+su móvil y ya está. Si le pones nombre propio a un calendario («Rafa», «Ana»),
+ese manda sobre el nombre por defecto.
+
+### Los colores
+
+Cada tema trae **tres colores de calendario**, y el tercero es la mezcla de los
+dos primeros:
+
+| Tema | Interfaz | Yo | Ella | Nosotros |
+| --- | --- | --- | --- | --- |
+| Azul | azul | rosa | lima | **ámbar** |
+| Rosa | rosa | azul | amarillo | **verde** |
+| Verde | verde | violeta | naranja | **rosa** |
+
+Dos detalles que no son casuales:
+
+- **El trío va en el lado opuesto del círculo cromático al color del tema.** El
+  tema pinta la interfaz (botones, día de hoy, contador, pestaña activa) y el
+  trío pinta los eventos. Si «Nosotros» fuera del color del tema no se
+  distinguiría de la interfaz, así que se pone justo enfrente: en los tres
+  temas, «Nosotros» queda a 180° de la interfaz y ninguna persona a menos de 60°.
+- **Las dos personas quedan a 120-165° entre sí**, y además se separan en
+  claridad. Es lo que hace que no se confundan ni en un bloque de 20 px de la
+  vista de semana.
+
+**Dentro de un tema** puedes elegir cuál de los dos colores quiere cada uno con
+el botón **Intercambiar**: si te gusta más el que le ha tocado a ella, se
+cambian.
+
+Con el tema **«A mi gusto»** eliges los cuatro colores con el selector del
+móvil: el tuyo, el suyo, el de «Nosotros» y el de la interfaz. Los dos últimos
+vienen en automático y se pueden fijar a mano cuando quieras:
+
+- **«Nosotros»** se calcula como la mezcla de los otros dos. La mezcla es **por
+  tono, no por canales RGB** — la diferencia entre mezclar pintura y mezclar
+  luz: en RGB, azul + amarillo da gris; por tono da verde, que es lo que espera
+  cualquiera.
+- **La interfaz** sale del opuesto a «Nosotros», que es lo que garantiza que no
+  se parezca a ninguno de los tres del calendario.
+
+La app avisa si los dos colores de persona quedan a menos de 45° entre sí, o si
+el de la interfaz se acerca a menos de 40° de alguno del calendario: en los dos
+casos dejarían de distinguirse.
+
 ### Decisiones que conviene conocer
 
+- **En la vista de mes el evento sale con la hora y el nombre, sin emoji ni
+  barra de color.** Una celda mide unos 48 px en un móvil, así que cada píxel
+  cuenta: la hora va en formato mínimo («9», «9:30») y el fondo del chip ya dice
+  de quién es. El emoji sí aparece en la semana, en la agenda y en el detalle
+  del día.
 - **Los colores** salen todos de fichas semánticas en `src/index.css`, que
-  cambian según los atributos `data-theme` y `data-accent` del `<html>`. Los
-  componentes no llevan ni un color a mano: por eso cambiar de tema es
-  instantáneo y no hay ninguna vista que se quede a medias.
+  cambian según los atributos `data-theme`, `data-accent` y `data-swap` del
+  `<html>`. Los componentes no llevan ni un color a mano: por eso cambiar de
+  tema es instantáneo y no hay ninguna vista que se quede a medias.
+- Cada tema define sus tres colores **sin dueño** (`--p1`, `--p2`, `--p3`), y un
+  bloque aparte reparte quién se lleva cada uno. Así el botón de intercambiar es
+  un atributo en el `<html>`, en vez de duplicar los seis bloques de colores.
+- Los colores a medida se inyectan como variables (`--u-mine`, `--u-hers`,
+  `--u-ours`, `--u-chrome`) y el CSS deriva de cada uno sus cuatro fichas con
+  `color-mix`, en vez de pedir dieciséis colores al usuario.
 - Los eventos se piden con `singleEvents=true`, así cada repetición llega ya
   expandida con su fecha. Google se encarga de interpretar las reglas.
 - Al editar una repetición se puede tocar **solo ese día** o **toda la serie**.
   Si cambias la hora de toda la serie, se conserva la fecha de inicio original
   en lugar de moverla al día que estabas viendo.
-- **Los ajustes se guardan por cuenta de Google.** Tema, acento, calendarios y
-  filtros son de cada uno, así que si alguna vez entráis los dos desde el mismo
-  móvil no os pisáis.
+- **Los ajustes se guardan por cuenta de Google.** Tema, colores, nombres,
+  quién eres, calendarios y filtros son de cada uno, así que si alguna vez
+  entráis los dos desde el mismo móvil no os pisáis.
+- **Borrar un calendario de Google va detrás de dos confirmaciones** y avisa de
+  que se lleva todos sus eventos, para los dos. «Quitarlo de la app» solo libera
+  el hueco y no toca nada en Google.
 - Lo único que se guarda en el móvil es eso más una copia de los eventos para
   poder consultarlos sin conexión. Se puede borrar desde los ajustes.

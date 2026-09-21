@@ -8,10 +8,20 @@ import {
   type EditScope,
   type EventDraft,
 } from '../lib/eventWrite'
+import { useOwnerLabels } from '../lib/labels'
 import type { AppEvent } from '../lib/model'
-import { FREQ_LABELS, NO_RECURRENCE, type Freq } from '../lib/recurrence'
+import {
+  FREQ_UNIT_LABELS,
+  NO_RECURRENCE,
+  PRESETS,
+  describeRecurrence,
+  presetOf,
+  specOfPreset,
+  type Freq,
+  type PresetId,
+} from '../lib/recurrence'
 import type { Settings } from '../lib/storage'
-import { TAGS } from '../lib/tags'
+import { EMOJI_SUGGESTIONS, TAGS } from '../lib/tags'
 
 /** Avisos disponibles, en minutos antes del evento. */
 const REMINDER_PRESETS = [
@@ -34,6 +44,8 @@ const WEEKDAYS = [
   { day: 0, label: 'D' },
 ]
 
+const UNITS: Exclude<Freq, 'none'>[] = ['daily', 'weekly', 'monthly', 'yearly']
+
 export interface SheetSeed {
   start: Date
   end: Date
@@ -54,11 +66,16 @@ interface Props {
 
 export default function EventSheet({ settings, event, seed, onClose, onSaved }: Props) {
   const isNew = !event
+  const labels = useOwnerLabels()
   const [draft, setDraft] = useState<EventDraft>(() => initialDraft(event, seed, settings))
   const [scope, setScope] = useState<EditScope>('instance')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [preset, setPreset] = useState<PresetId>(() =>
+    presetOf(initialDraft(event, seed, settings).recurrence),
+  )
 
   const isSeries = Boolean(event?.seriesId) || (event?.recurrence.freq ?? 'none') !== 'none'
   const readOnly = Boolean(event && !event.editable)
@@ -68,6 +85,11 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
     () => OWNERS.filter((o) => settings.calendars[o]?.editable),
     [settings.calendars],
   )
+
+  // Emoji que se ve ahora mismo: el elegido, o el de la etiqueta como pista.
+  const shownEmoji =
+    draft.emoji ||
+    (draft.tags.length ? (TAGS.find((t) => t.id === draft.tags[0])?.icon ?? '') : '')
 
   // Cerrar con Escape, como en cualquier modal de escritorio.
   useEffect(() => {
@@ -79,6 +101,9 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
   const set = <K extends keyof EventDraft>(key: K, value: EventDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
 
+  const setRec = (patch: Partial<EventDraft['recurrence']>) =>
+    setDraft((d) => ({ ...d, recurrence: { ...d.recurrence, ...patch } }))
+
   /** Al mover el inicio, el fin se arrastra manteniendo la duracion. */
   const setStart = (value: Date) =>
     setDraft((d) => {
@@ -88,6 +113,11 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
 
   const toggle = <T,>(list: T[], value: T): T[] =>
     list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
+
+  function choosePreset(id: PresetId) {
+    setPreset(id)
+    set('recurrence', specOfPreset(id, draft.recurrence))
+  }
 
   async function handleSave() {
     if (!targetCalendarId) {
@@ -125,7 +155,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center">
       <button
         type="button"
         aria-label="Cerrar"
@@ -134,7 +164,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
       />
 
       <div
-        className="relative flex max-h-[92vh] w-full max-w-lg flex-col rounded-t-3xl border border-line bg-surface sm:rounded-3xl"
+        className="relative flex max-h-[93vh] w-full max-w-lg flex-col rounded-t-[28px] border border-line bg-surface shadow-float sm:rounded-[28px]"
         style={{ paddingBottom: 'var(--safe-bottom)' }}
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
@@ -146,7 +176,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
           >
             Cancelar
           </button>
-          <h2 className="truncate text-sm font-semibold">
+          <h2 className="truncate text-sm font-extrabold">
             {isNew ? 'Nuevo evento' : readOnly ? 'Evento' : 'Editar evento'}
           </h2>
           {readOnly ? (
@@ -156,7 +186,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
               type="button"
               onClick={handleSave}
               disabled={busy}
-              className="tap rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-fg disabled:opacity-50"
+              className="tap rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-accent-fg disabled:opacity-50"
             >
               {busy ? '…' : 'Guardar'}
             </button>
@@ -165,13 +195,71 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <fieldset disabled={readOnly || busy} className="flex flex-col gap-4">
-            <input
-              value={draft.title}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder="¿Qué es?"
-              autoFocus={isNew}
-              className="w-full rounded-xl border border-line bg-elevated px-3 py-2.5 text-base outline-none placeholder:text-subtle focus:border-accent-line"
-            />
+            {/* Emoji + titulo en la misma linea: el emoji es lo primero que se
+                ve del evento en todas las vistas, asi que se elige aqui. */}
+            <div className="flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEmoji((v) => !v)}
+                className={`tap flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border text-xl transition ${
+                  showEmoji ? 'border-accent-line bg-accent-soft' : 'border-line bg-elevated'
+                }`}
+                aria-label="Elegir emoji"
+              >
+                {shownEmoji || <span className="text-sm text-subtle">☺</span>}
+              </button>
+              <input
+                value={draft.title}
+                onChange={(e) => set('title', e.target.value)}
+                placeholder="¿Qué es?"
+                autoFocus={isNew}
+                className="min-w-0 flex-1 rounded-2xl border border-line bg-elevated px-3.5 text-base font-semibold outline-none placeholder:font-normal placeholder:text-subtle focus:border-accent-line"
+              />
+            </div>
+
+            {showEmoji && (
+              <div className="rounded-2xl border border-line bg-elevated p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    value={draft.emoji}
+                    onChange={(e) => set('emoji', e.target.value.slice(0, 8))}
+                    placeholder="O pega el que quieras"
+                    className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
+                  />
+                  {draft.emoji && (
+                    <button
+                      type="button"
+                      onClick={() => set('emoji', '')}
+                      className="tap shrink-0 rounded-xl border border-line px-3 py-2 text-xs text-muted"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+                <div className="grid max-h-36 grid-cols-10 gap-1 overflow-y-auto">
+                  {EMOJI_SUGGESTIONS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => {
+                        set('emoji', e)
+                        setShowEmoji(false)
+                      }}
+                      className={`tap flex aspect-square items-center justify-center rounded-lg text-base transition ${
+                        draft.emoji === e ? 'bg-accent-soft ring-2 ring-accent' : 'hover:bg-surface'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                {!draft.emoji && draft.tags.length > 0 && (
+                  <p className="mt-2 text-[11px] leading-snug text-subtle">
+                    Sin elegir ninguno se usa el de la etiqueta.
+                  </p>
+                )}
+              </div>
+            )}
 
             <Field label="¿De quién es?">
               <div className="grid grid-cols-3 gap-2">
@@ -185,20 +273,20 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       type="button"
                       onClick={() => set('owner', owner)}
                       disabled={!usable}
-                      className={`tap rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                      className={`tap truncate rounded-2xl border px-2 py-2.5 text-xs font-bold transition ${
                         active ? style.chip : 'border-line text-subtle'
                       } disabled:opacity-25`}
                     >
                       <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${style.dot}`} />
-                      {style.label}
+                      {labels[owner]}
                     </button>
                   )
                 })}
               </div>
             </Field>
 
-            <label className="flex items-center justify-between rounded-xl border border-line bg-elevated px-3 py-2.5">
-              <span className="text-sm">Todo el día</span>
+            <label className="flex items-center justify-between rounded-2xl border border-line bg-elevated px-3.5 py-3">
+              <span className="text-sm font-semibold">Todo el día</span>
               <input
                 type="checkbox"
                 checked={draft.allDay}
@@ -223,74 +311,148 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
             </div>
 
             <Field label="Se repite">
-              <select
-                value={draft.recurrence.freq}
-                onChange={(e) =>
-                  set('recurrence', {
-                    ...draft.recurrence,
-                    freq: e.target.value as Freq,
-                  })
-                }
-                className="w-full appearance-none rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none focus:border-accent-line"
-              >
-                {(Object.keys(FREQ_LABELS) as Freq[]).map((f) => (
-                  <option key={f} value={f} className="bg-surface">
-                    {FREQ_LABELS[f]}
-                  </option>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => choosePreset(p.id)}
+                    className={`tap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      preset === p.id
+                        ? 'border-accent-line bg-accent-soft text-accent'
+                        : 'border-line text-subtle'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
                 ))}
-              </select>
+              </div>
 
-              {(draft.recurrence.freq === 'weekly' || draft.recurrence.freq === 'biweekly') && (
-                <div className="mt-2 flex gap-1">
-                  {WEEKDAYS.map(({ day, label }) => {
-                    const active = draft.recurrence.byDay.includes(day)
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() =>
-                          set('recurrence', {
-                            ...draft.recurrence,
-                            byDay: toggle(draft.recurrence.byDay, day),
-                          })
-                        }
-                        className={`tap h-8 flex-1 rounded-lg border text-xs font-semibold transition ${
-                          active
-                            ? 'border-accent-line bg-accent-soft text-accent'
-                            : 'border-line text-subtle'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
+              {preset === 'custom' && (
+                <div className="mt-2.5 flex flex-col gap-2.5 rounded-2xl border border-line bg-elevated p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-xs font-semibold text-muted">Cada</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      inputMode="numeric"
+                      value={draft.recurrence.interval}
+                      onChange={(e) =>
+                        setRec({ interval: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })
+                      }
+                      className="w-16 rounded-xl border border-line bg-surface px-2.5 py-2 text-center text-sm font-bold tabular-nums outline-none focus:border-accent-line"
+                    />
+                    <select
+                      value={draft.recurrence.freq === 'none' ? 'weekly' : draft.recurrence.freq}
+                      onChange={(e) => setRec({ freq: e.target.value as Freq })}
+                      className="min-w-0 flex-1 appearance-none rounded-xl border border-line bg-surface px-3 py-2 text-sm font-semibold outline-none focus:border-accent-line"
+                    >
+                      {UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {FREQ_UNIT_LABELS[u]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {draft.recurrence.freq === 'weekly' && (
+                    <div>
+                      <div className="mb-1.5 text-xs font-semibold text-muted">Qué días</div>
+                      <div className="flex gap-1">
+                        {WEEKDAYS.map(({ day, label }) => {
+                          const active = draft.recurrence.byDay.includes(day)
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => setRec({ byDay: toggle(draft.recurrence.byDay, day) })}
+                              className={`tap h-9 flex-1 rounded-xl border text-xs font-bold transition ${
+                                active
+                                  ? 'border-accent bg-accent text-accent-fg'
+                                  : 'border-line text-subtle'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="mb-1.5 text-xs font-semibold text-muted">Termina</div>
+                    <div className="flex gap-1.5">
+                      {(
+                        [
+                          ['never', 'Nunca'],
+                          ['until', 'En fecha'],
+                          ['count', 'Tras N veces'],
+                        ] as const
+                      ).map(([kind, label]) => {
+                        const current = draft.recurrence.count
+                          ? 'count'
+                          : draft.recurrence.until
+                            ? 'until'
+                            : 'never'
+                        return (
+                          <button
+                            key={kind}
+                            type="button"
+                            onClick={() =>
+                              // until y count son excluyentes en RRULE.
+                              setRec({
+                                until: kind === 'until' ? fmt.inputDate(defaultUntil(draft.start)) : undefined,
+                                count: kind === 'count' ? 10 : undefined,
+                              })
+                            }
+                            className={`tap flex-1 rounded-xl border py-2 text-[11px] font-semibold transition ${
+                              current === kind
+                                ? 'border-accent bg-accent text-accent-fg'
+                                : 'border-line text-subtle'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {draft.recurrence.until && (
+                      <input
+                        type="date"
+                        value={draft.recurrence.until}
+                        onChange={(e) => setRec({ until: e.target.value || undefined })}
+                        className="mt-2 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm tabular-nums outline-none focus:border-accent-line"
+                      />
+                    )}
+                    {draft.recurrence.count !== undefined && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={999}
+                          inputMode="numeric"
+                          value={draft.recurrence.count}
+                          onChange={(e) =>
+                            setRec({
+                              count: Math.max(1, Math.min(999, Number(e.target.value) || 1)),
+                            })
+                          }
+                          className="w-20 rounded-xl border border-line bg-surface px-2.5 py-2 text-center text-sm font-bold tabular-nums outline-none focus:border-accent-line"
+                        />
+                        <span className="text-xs text-muted">veces en total</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {draft.recurrence.freq !== 'none' && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-subtle">Hasta</span>
-                  <input
-                    type="date"
-                    value={draft.recurrence.until ?? ''}
-                    onChange={(e) =>
-                      set('recurrence', {
-                        ...draft.recurrence,
-                        until: e.target.value || undefined,
-                      })
-                    }
-                    className="flex-1 rounded-lg border border-line bg-elevated px-2 py-1.5 text-sm outline-none focus:border-accent-line"
-                  />
-                  {draft.recurrence.until && (
-                    <button
-                      type="button"
-                      onClick={() => set('recurrence', { ...draft.recurrence, until: undefined })}
-                      className="tap text-xs text-subtle"
-                    >
-                      sin fin
-                    </button>
-                  )}
-                </div>
+                <p className="mt-2 text-[11px] font-semibold text-accent">
+                  {describeRecurrence(draft.recurrence)}
+                </p>
               )}
             </Field>
 
@@ -302,8 +464,10 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                     <button
                       key={minutes}
                       type="button"
-                      onClick={() => set('reminders', toggle(draft.reminders, minutes).sort((a, b) => a - b))}
-                      className={`tap rounded-full border px-2.5 py-1 text-xs transition ${
+                      onClick={() =>
+                        set('reminders', toggle(draft.reminders, minutes).sort((a, b) => a - b))
+                      }
+                      className={`tap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                         active
                           ? 'border-accent-line bg-accent-soft text-accent'
                           : 'border-line text-subtle'
@@ -329,7 +493,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       key={tag.id}
                       type="button"
                       onClick={() => set('tags', toggle(draft.tags, tag.id))}
-                      className={`tap rounded-full border px-2.5 py-1 text-xs transition ${
+                      className={`tap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                         active
                           ? 'border-accent-line bg-accent-soft text-accent'
                           : 'border-line text-subtle'
@@ -348,7 +512,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                 value={draft.location}
                 onChange={(e) => set('location', e.target.value)}
                 placeholder="Opcional"
-                className="w-full rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
+                className="w-full rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
               />
             </Field>
 
@@ -358,7 +522,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                 onChange={(e) => set('notes', e.target.value)}
                 rows={3}
                 placeholder="Opcional"
-                className="w-full resize-none rounded-xl border border-line bg-elevated px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
+                className="w-full resize-none rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
               />
             </Field>
 
@@ -375,7 +539,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       key={value}
                       type="button"
                       onClick={() => setScope(value)}
-                      className={`tap rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                      className={`tap rounded-2xl border px-2 py-2.5 text-xs font-bold transition ${
                         scope === value
                           ? 'border-accent-line bg-accent-soft text-accent'
                           : 'border-line text-subtle'
@@ -390,7 +554,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
           </fieldset>
 
           {error && (
-            <p className="mt-4 rounded-xl border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger">
+            <p className="mt-4 rounded-2xl border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger">
               {error}
             </p>
           )}
@@ -413,7 +577,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(false)}
-                      className="tap flex-1 rounded-xl border border-line py-2.5 text-sm text-muted"
+                      className="tap flex-1 rounded-2xl border border-line py-2.5 text-sm font-semibold text-muted"
                     >
                       No, dejarlo
                     </button>
@@ -421,7 +585,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                       type="button"
                       onClick={handleDelete}
                       disabled={busy}
-                      className="tap flex-1 rounded-xl bg-danger-strong py-2.5 text-sm font-semibold text-danger-strong-fg disabled:opacity-50"
+                      className="tap flex-1 rounded-2xl bg-danger-strong py-2.5 text-sm font-bold text-danger-strong-fg disabled:opacity-50"
                     >
                       Borrar {isSeries && scope === 'series' ? 'la serie' : 'este día'}
                     </button>
@@ -430,7 +594,7 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="tap rounded-xl border border-danger-line py-2.5 text-sm text-danger"
+                    className="tap rounded-2xl border border-danger-line py-2.5 text-sm font-semibold text-danger"
                   >
                     Borrar evento
                   </button>
@@ -443,21 +607,21 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
   )
 }
 
-/** Etiqueta a la izquierda y control a la derecha, en la misma linea. */
-function LabelledRow({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="w-16 shrink-0 text-xs font-medium text-subtle">{label}</span>
-      <div className="min-w-0 flex-1">{children}</div>
+    <div>
+      <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-subtle">{label}</div>
+      {children}
     </div>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** Etiqueta a la izquierda y control a la derecha, en la misma linea. */
+function LabelledRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="mb-1.5 text-xs font-medium text-subtle">{label}</div>
-      {children}
+    <div className="flex items-center gap-3">
+      <span className="w-16 shrink-0 text-xs font-bold text-subtle">{label}</span>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
 }
@@ -483,14 +647,19 @@ function DateTimeInput({
         if (!e.target.value) return
         // El valor del input viene en hora local: new Date() lo interpreta bien
         // para datetime-local, pero 'yyyy-MM-dd' se leeria como UTC.
-        const next = allDay
-          ? new Date(`${e.target.value}T00:00:00`)
-          : new Date(e.target.value)
+        const next = allDay ? new Date(`${e.target.value}T00:00:00`) : new Date(e.target.value)
         if (!Number.isNaN(next.getTime())) onChange(next)
       }}
-      className="w-full rounded-xl border border-line bg-elevated px-2.5 py-2.5 text-sm tabular-nums outline-none focus:border-accent-line"
+      className="w-full rounded-2xl border border-line bg-elevated px-3 py-2.5 text-sm font-semibold tabular-nums outline-none focus:border-accent-line"
     />
   )
+}
+
+/** Un año por delante: es una fecha de fin razonable por defecto. */
+function defaultUntil(start: Date): Date {
+  const out = new Date(start)
+  out.setFullYear(out.getFullYear() + 1)
+  return out
 }
 
 function initialDraft(
@@ -507,6 +676,7 @@ function initialDraft(
       end: event.end,
       notes: event.notes,
       tags: event.tags,
+      emoji: event.emoji ?? '',
       location: event.location ?? '',
       reminders: event.reminders,
       recurrence: event.recurrence,
@@ -529,6 +699,7 @@ function initialDraft(
     end,
     notes: '',
     tags: seed?.tags ?? [],
+    emoji: '',
     location: '',
     reminders: settings.defaultReminders,
     recurrence: NO_RECURRENCE,

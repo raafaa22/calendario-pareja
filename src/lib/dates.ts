@@ -40,6 +40,15 @@ export function daysBetween(from: Date, to: Date): Date[] {
 
 export const fmt = {
   time: (d: Date) => format(d, 'HH:mm'),
+  /**
+   * Hora en el minimo de caracteres posible, para las celdas del mes: sin cero
+   * delante y sin los minutos cuando son en punto. "9", "13", "9:30", "21:15".
+   */
+  timeCompact: (d: Date) => {
+    const h = d.getHours()
+    const m = d.getMinutes()
+    return m === 0 ? String(h) : `${h}:${String(m).padStart(2, '0')}`
+  },
   dayNum: (d: Date) => format(d, 'd'),
   // 'EEEEE' da M para martes y miercoles. En Espana se usa X para miercoles.
   weekdayShort: (d: Date) => ['D', 'L', 'M', 'X', 'J', 'V', 'S'][d.getDay()],

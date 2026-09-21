@@ -40,15 +40,28 @@ export function getTag(id: string): TagDef | undefined {
 const TAG_RE = /#([\p{L}\p{N}_-]+)/gu
 
 /**
- * Separa la descripcion en notas libres y etiquetas. Devuelve solo las
+ * Emoji elegido a mano para el evento. Va marcado para poder separarlo de las
+ * notas, igual que las etiquetas, y sobrevive a que alguien edite el evento
+ * desde la app de Google.
+ */
+const EMOJI_RE = /\[emoji:([^\]]{1,16})\]/u
+
+export interface ParsedDescription {
+  notes: string
+  tags: string[]
+  /** Emoji elegido a mano, si lo hay. */
+  emoji?: string
+}
+
+/**
+ * Separa la descripcion en notas libres, etiquetas y emoji. Devuelve solo las
  * etiquetas conocidas para no ensuciar la interfaz con hashtags casuales que
  * alguien escriba dentro de una nota.
  */
-export function parseDescription(description?: string | null): {
-  notes: string
-  tags: string[]
-} {
+export function parseDescription(description?: string | null): ParsedDescription {
   if (!description) return { notes: '', tags: [] }
+
+  const emoji = description.match(EMOJI_RE)?.[1]?.trim() || undefined
 
   const found = new Set<string>()
   for (const match of description.matchAll(TAG_RE)) {
@@ -56,9 +69,10 @@ export function parseDescription(description?: string | null): {
     if (TAG_BY_ID.has(id)) found.add(id)
   }
 
-  // Quita solo las etiquetas reconocidas del texto, y limpia las lineas que se
-  // quedan vacias al hacerlo.
+  // Quita el marcador de emoji y solo las etiquetas reconocidas, y limpia las
+  // lineas que se quedan vacias al hacerlo.
   const notes = description
+    .replace(EMOJI_RE, '')
     .replace(TAG_RE, (whole, id: string) =>
       TAG_BY_ID.has(id.toLowerCase()) ? '' : whole,
     )
@@ -68,13 +82,23 @@ export function parseDescription(description?: string | null): {
     .join('\n')
     .trim()
 
-  return { notes, tags: [...found] }
+  return { notes, tags: [...found], emoji }
 }
 
-/** Reconstruye la descripcion a partir de notas y etiquetas. */
-export function buildDescription(notes: string, tags: string[]): string {
+/** Reconstruye la descripcion a partir de notas, etiquetas y emoji. */
+export function buildDescription(notes: string, tags: string[], emoji?: string): string {
   const clean = notes.trim()
-  const line = tags.map((t) => `#${t}`).join(' ')
-  if (!line) return clean
-  return clean ? `${clean}\n\n${line}` : line
+  const marks = [...tags.map((t) => `#${t}`), emoji ? `[emoji:${emoji}]` : '']
+    .filter(Boolean)
+    .join(' ')
+  if (!marks) return clean
+  return clean ? `${clean}\n\n${marks}` : marks
 }
+
+/** Emojis que se ofrecen como atajo en el formulario. */
+export const EMOJI_SUGGESTIONS = [
+  '❤️', '🎉', '🎂', '🍕', '🍽️', '☕', '🍻', '🎬', '🎵', '🎮',
+  '📚', '✏️', '💼', '💻', '🏋️', '🏃', '⚽', '🧘', '🩺', '⚕️',
+  '💊', '🦷', '💈', '✈️', '🚗', '🏖️', '🏠', '🛒', '🐶', '🌙',
+  '☀️', '⭐', '🔔', '📞', '🎁', '💸', '🧾', '🔧', '🌸', '🍀',
+]

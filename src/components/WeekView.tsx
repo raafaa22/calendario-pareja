@@ -6,7 +6,7 @@ import { occursOn, type AppEvent } from '../lib/model'
 import { eventIcon } from './EventChip'
 
 /** Altura en pixeles de una hora en la rejilla. */
-const HOUR_PX = 48
+const HOUR_PX = 52
 
 interface Props {
   cursor: Date
@@ -31,7 +31,7 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Cabecera de dias, fija */}
-      <div className="flex shrink-0 border-b border-line pr-1">
+      <div className="flex shrink-0 pr-1">
         <div className="w-9 shrink-0" />
         {days.map((d) => (
           <button
@@ -40,9 +40,11 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
             onClick={() => onSelectDay(d)}
             className="tap flex flex-1 flex-col items-center py-1"
           >
-            <span className="text-[9px] font-semibold text-subtle">{fmt.weekdayShort(d)}</span>
+            <span className="text-[9px] font-extrabold tracking-wider text-subtle">
+              {fmt.weekdayShort(d)}
+            </span>
             <span
-              className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
+              className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-extrabold tabular-nums ${
                 isToday(d) ? 'bg-accent text-accent-fg' : 'text-fg'
               }`}
             >
@@ -63,7 +65,7 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
                   key={`${ev.calendarId}:${ev.id}`}
                   type="button"
                   onClick={() => onOpenEvent(ev)}
-                  className={`tap truncate rounded border px-1 text-[9px] leading-tight ${OWNER_STYLES[ev.owner].chip}`}
+                  className={`tap truncate rounded-lg border px-1 text-[9px] font-semibold leading-tight ${OWNER_STYLES[ev.owner].chip}`}
                 >
                   {ev.title}
                 </button>
@@ -81,10 +83,10 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
             {hours.map((h) => (
               <div
                 key={h}
-                className="relative border-t border-line text-right"
+                className="relative text-right"
                 style={{ height: HOUR_PX }}
               >
-                <span className="absolute -top-1.5 right-1 text-[9px] tabular-nums text-subtle">
+                <span className="absolute -top-1.5 right-1.5 text-[9px] font-bold tabular-nums text-subtle">
                   {h > 0 ? `${String(h).padStart(2, '0')}` : ''}
                 </span>
               </div>
@@ -117,9 +119,9 @@ function DayColumn({
   const placed = useMemo(() => layout(events, day), [events, day])
 
   return (
-    <div className="relative min-w-0 flex-1 border-l border-line">
+    <div className="relative min-w-0 flex-1 border-l border-line/60">
       {Array.from({ length: 24 }, (_, h) => (
-        <div key={h} className="border-t border-line" style={{ height: HOUR_PX }} />
+        <div key={h} className="border-t border-line/60" style={{ height: HOUR_PX }} />
       ))}
 
       {isToday(day) && <NowLine />}
@@ -133,8 +135,8 @@ function DayColumn({
             onClick={() => onOpenEvent(ev)}
             title={`${fmt.time(ev.start)} ${ev.title}`}
             aria-label={`${fmt.time(ev.start)} ${ev.title}`}
-            className={`tap absolute overflow-hidden rounded border text-[9px] leading-tight ${
-              narrow ? 'flex items-start justify-center pt-0.5' : 'px-0.5 text-left'
+            className={`tap absolute overflow-hidden rounded-lg border text-[9px] leading-tight ${
+              narrow ? 'flex items-start justify-center pt-1' : 'px-1 pt-0.5 text-left'
             } ${OWNER_STYLES[ev.owner].chip}`}
             style={{ top, height, left: `${left}%`, width: `${width}%` }}
           >
@@ -142,7 +144,7 @@ function DayColumn({
               <span className="text-[11px] leading-none">{icon ?? '•'}</span>
             ) : (
               <>
-                <span className="block truncate font-medium">
+                <span className="block truncate font-bold">
                   {icon && <span className="mr-px">{icon}</span>}
                   {ev.title}
                 </span>

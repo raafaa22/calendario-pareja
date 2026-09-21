@@ -38,13 +38,13 @@ export default function FreeSlotsView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-line px-3 pb-2">
-        <p className="mb-2 text-xs text-subtle">
-          Huecos en los que <span className="text-fg">nadie</span> tiene nada, entre las{' '}
+      <div className="shrink-0 px-3 pb-2.5">
+        <p className="mb-2 text-xs leading-snug text-subtle">
+          Ratos en los que <span className="font-bold text-fg">nadie</span> tiene nada, entre las{' '}
           {DAY_WINDOW.startHour}:00 y las {DAY_WINDOW.endHour}:00.
         </p>
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <span className="shrink-0 text-[11px] text-subtle">Al menos</span>
+          <span className="shrink-0 text-[11px] font-bold text-subtle">Al menos</span>
           {PRESETS.map((m) => (
             <button
               key={m}
@@ -72,32 +72,37 @@ export default function FreeSlotsView({
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
           {days.map(({ day, slots }) => (
-            <section key={day.toISOString()} className="pt-3">
-              <h3 className="mb-1.5 text-xs font-semibold">
+            <section key={day.toISOString()} className="pt-3.5">
+              <h3 className="mb-2 flex items-center gap-2">
                 <span
-                  className={
-                    isToday(day) ? 'text-accent' : 'text-muted first-letter:uppercase'
-                  }
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold tabular-nums ${
+                    isToday(day) ? 'bg-accent text-accent-fg' : 'bg-elevated text-muted'
+                  }`}
                 >
+                  {fmt.dayNum(day)}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs font-extrabold first-letter:uppercase">
                   {isToday(day) ? 'Hoy' : isTomorrow(day) ? 'Mañana' : fmt.dayFull(day)}
                 </span>
               </h3>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {slots.map((slot) => (
                   <button
                     key={slot.start.toISOString()}
                     type="button"
                     onClick={() => onPickSlot(slot.start, slot.end)}
-                    className="tap flex items-center justify-between rounded-xl border border-accent-line bg-accent-soft px-3 py-2.5 text-left"
+                    className="tap flex items-center justify-between rounded-2xl border border-accent-line bg-accent-soft px-3.5 py-3 text-left shadow-card transition active:scale-[0.99]"
                   >
-                    <span className="text-sm font-medium tabular-nums text-accent">
-                      {fmt.time(slot.start)} – {fmt.time(slot.end)}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs text-muted">
-                        {formatDuration(slot.minutes)}
+                    <span>
+                      <span className="block text-[15px] font-extrabold tabular-nums text-accent">
+                        {fmt.time(slot.start)} – {fmt.time(slot.end)}
                       </span>
-                      <span className="text-accent">＋</span>
+                      <span className="text-[11px] font-semibold text-muted">
+                        {formatDuration(slot.minutes)} libres
+                      </span>
+                    </span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-light text-accent-fg">
+                      ＋
                     </span>
                   </button>
                 ))}

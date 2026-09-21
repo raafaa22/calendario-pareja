@@ -3,8 +3,11 @@ import { daysBetween, fmt, monthGridRange } from '../lib/dates'
 import { byStart, occursOn, type AppEvent } from '../lib/model'
 import EventChip from './EventChip'
 
-/** Iconos que caben en una celda antes de resumir con "+N". */
-const MAX_ICONS = 6
+/**
+ * Eventos con nombre que caben en una celda. A partir de ahi se resume con
+ * "+N", que al tocar el dia se despliega entero abajo.
+ */
+const MAX_NAMED = 3
 
 interface Props {
   cursor: Date
@@ -21,21 +24,30 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="grid grid-cols-7 border-b border-line px-1 pb-1">
+      <div className="grid shrink-0 grid-cols-7 px-2 pb-1.5">
         {days.slice(0, 7).map((d) => (
-          <div key={d.toISOString()} className="text-center text-[10px] font-semibold text-subtle">
+          <div
+            key={d.toISOString()}
+            className="text-center text-[10px] font-extrabold tracking-wider text-subtle"
+          >
             {fmt.weekdayShort(d)}
           </div>
         ))}
       </div>
 
-      <div className="grid flex-1 auto-rows-fr grid-cols-7 gap-px overflow-y-auto px-1 py-1">
+      {/*
+        Las filas tienen alto minimo y la rejilla hace scroll. Es lo que permite
+        que quepan los nombres de los eventos sin apretar las celdas: si una
+        semana esta cargada, crece y se baja con el dedo.
+      */}
+      <div className="grid min-h-0 flex-1 auto-rows-[minmax(76px,1fr)] grid-cols-7 gap-1 overflow-y-auto px-2 pb-2">
         {days.map((day) => {
           const dayEvents = events.filter((e) => occursOn(e, day)).sort(byStart)
-          const shown = dayEvents.slice(0, MAX_ICONS)
+          const shown = dayEvents.slice(0, MAX_NAMED)
           const hidden = dayEvents.length - shown.length
           const outside = !isSameMonth(day, cursor)
           const isSel = isSameDay(day, selected)
+          const today = isToday(day)
 
           return (
             <div
@@ -44,26 +56,28 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
               tabIndex={0}
               onClick={() => onSelectDay(day)}
               onKeyDown={(e) => e.key === 'Enter' && onSelectDay(day)}
-              className={`tap flex min-h-[64px] cursor-pointer flex-col gap-0.5 rounded-lg p-1 transition ${
-                isSel ? 'bg-accent-soft ring-1 ring-accent-line' : 'hover:bg-elevated'
-              } ${outside ? 'opacity-35' : ''}`}
+              className={`tap flex cursor-pointer flex-col gap-[3px] rounded-xl p-1 transition ${
+                isSel
+                  ? 'bg-accent-soft ring-2 ring-accent-line'
+                  : outside
+                    ? 'bg-transparent'
+                    : 'bg-sunken'
+              } ${outside ? 'opacity-40' : ''}`}
             >
               <span
-                className={`self-start rounded px-1 text-[11px] font-semibold tabular-nums ${
-                  isToday(day) ? 'bg-accent text-accent-fg' : 'text-fg'
+                className={`mx-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold tabular-nums ${
+                  today ? 'bg-accent text-accent-fg' : 'text-muted'
                 }`}
               >
                 {fmt.dayNum(day)}
               </span>
 
-              <div className="flex flex-wrap content-start gap-0.5">
+              <div className="flex min-w-0 flex-col gap-[2px]">
                 {shown.map((ev) => (
                   <EventChip key={`${ev.calendarId}:${ev.id}`} event={ev} onClick={onOpenEvent} />
                 ))}
                 {hidden > 0 && (
-                  <span className="self-center text-[9px] leading-none text-subtle">
-                    +{hidden}
-                  </span>
+                  <span className="pl-1 text-[8.5px] font-bold text-subtle">+{hidden} más</span>
                 )}
               </div>
             </div>
@@ -71,16 +85,23 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
         })}
       </div>
 
-      {/* Detalle del dia tocado, debajo de la rejilla. */}
-      <div className="flex max-h-[38%] shrink-0 flex-col border-t border-line">
-        <div className="shrink-0 px-3 pt-2 text-xs font-semibold text-muted first-letter:uppercase">
-          {fmt.dayFull(selected)}
+      {/* Detalle del dia tocado. */}
+      <div className="flex max-h-[34%] shrink-0 flex-col rounded-t-3xl border-t border-line bg-surface shadow-float">
+        <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-3">
+          <h2 className="truncate text-sm font-extrabold first-letter:uppercase">
+            {fmt.dayFull(selected)}
+          </h2>
+          {dayOfSelected.length > 0 && (
+            <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
+              {dayOfSelected.length}
+            </span>
+          )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5">
           {dayOfSelected.length === 0 ? (
-            <p className="py-1 text-sm text-subtle">Sin eventos.</p>
+            <p className="text-sm text-subtle">Sin eventos.</p>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               {dayOfSelected.map((ev) => (
                 <EventChip
                   key={`${ev.calendarId}:${ev.id}`}

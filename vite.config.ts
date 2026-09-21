@@ -34,6 +34,17 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
+            // La tipografia se cachea de por vida: no cambia nunca y sin ella
+            // la app se ve con otra letra al abrirla sin conexion.
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fuentes',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             // Los eventos se cachean para poder consultarlos sin conexion.
             // NetworkFirst: si hay red, dato fresco; si no, el ultimo conocido.
             urlPattern: /^https:\/\/www\.googleapis\.com\/calendar\/v3\/.*/,

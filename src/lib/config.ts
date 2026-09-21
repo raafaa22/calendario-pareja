@@ -25,24 +25,27 @@ export const OWNERS = ['mine', 'hers', 'ours'] as const
 export type Owner = (typeof OWNERS)[number]
 
 export interface OwnerStyle {
-  label: string
   /** Clase del chip del evento (definida en index.css). */
   chip: string
   /** Punto de color que identifica a la persona. */
   dot: string
+  /** Barra vertical de color, al filo del evento. */
+  bar: string
   text: string
 }
 
 /**
- * Azul para uno, verde para el otro y turquesa para lo conjunto. Los valores
- * de cada clase estan en index.css, con una version para tema claro y otra
- * para oscuro. No dependen del acento elegido: el color de cada persona es
- * identidad, y debe ser el mismo en los dos moviles.
+ * Clases de color de cada carril. Los valores estan en index.css, con una
+ * version por tema y por juego de color.
+ *
+ * Aqui no hay nombres: `mine` y `hers` son carriles fijos, no "el mio" y "el
+ * suyo" segun quien mire, asi que el nombre que se ensena depende de quien ha
+ * entrado. Ver src/lib/owners.ts.
  */
 export const OWNER_STYLES: Record<Owner, OwnerStyle> = {
-  mine: { label: 'Yo', chip: 'chip-mine', dot: 'dot-mine', text: 'fg-mine' },
-  hers: { label: 'Ella', chip: 'chip-hers', dot: 'dot-hers', text: 'fg-hers' },
-  ours: { label: 'Nosotros', chip: 'chip-ours', dot: 'dot-ours', text: 'fg-ours' },
+  mine: { chip: 'chip-mine', dot: 'dot-mine', bar: 'bar-mine', text: 'fg-mine' },
+  hers: { chip: 'chip-hers', dot: 'dot-hers', bar: 'bar-hers', text: 'fg-hers' },
+  ours: { chip: 'chip-ours', dot: 'dot-ours', bar: 'bar-ours', text: 'fg-ours' },
 }
 
 /** Ventana del dia que se considera "tiempo util" al buscar huecos libres. */

@@ -15,6 +15,7 @@
   --color-bg: var(--c-bg);
   --color-surface: var(--c-surface);
   --color-elevated: var(--c-elevated);
+  --color-sunken: var(--c-sunken);
   --color-line: var(--c-line);
   --color-fg: var(--c-fg);
   --color-muted: var(--c-muted);
@@ -31,7 +32,12 @@
   --color-warn: var(--c-warn);
   --color-warn-soft: var(--c-warn-soft);
 
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Tipografia geometrica: es lo que mas separa la app del aspecto de
+     Google Calendar, que va con Roboto / la del sistema. */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px var(--c-shadow);
+  --shadow-float: 0 4px 12px -2px var(--c-shadow), 0 16px 32px -12px var(--c-shadow);
 }
 
 /* ---------- Neutros: tema oscuro ---------- */
@@ -41,10 +47,12 @@
   --c-bg: #0d1b24;
   --c-surface: #122430;
   --c-elevated: #172d3a;
+  --c-sunken: #101f29;
   --c-line: rgb(255 255 255 / 0.11);
   --c-fg: #e4eef2;
   --c-muted: rgb(228 238 242 / 0.62);
   --c-subtle: rgb(228 238 242 / 0.38);
+  --c-shadow: rgb(0 0 0 / 0.5);
   --c-danger: #fca5a5;
   --c-danger-soft: rgb(248 113 113 / 0.14);
   --c-danger-line: rgb(248 113 113 / 0.34);
@@ -53,22 +61,6 @@
   --c-warn: #fcd34d;
   --c-warn-soft: rgb(251 191 36 / 0.14);
 
-  /* Colores de persona. Son identidad, no decoracion: no cambian con el
-     acento, para que los dos veais el mismo color para la misma persona. */
-  --o-mine-bg: rgb(56 189 248 / 0.16);
-  --o-mine-fg: #cfe9fb;
-  --o-mine-line: rgb(125 211 252 / 0.38);
-  --o-mine-dot: #7dd3fc;
-
-  --o-hers-bg: rgb(52 211 153 / 0.16);
-  --o-hers-fg: #c9f2e2;
-  --o-hers-line: rgb(110 231 183 / 0.38);
-  --o-hers-dot: #6ee7b7;
-
-  --o-ours-bg: rgb(45 212 191 / 0.2);
-  --o-ours-fg: #d6f7f3;
-  --o-ours-line: rgb(153 246 228 / 0.62);
-  --o-ours-dot: #5eead4;
 }
 
 /* ---------- Neutros: tema claro ---------- */
@@ -77,10 +69,12 @@
   --c-bg: #f3f7f9;
   --c-surface: #ffffff;
   --c-elevated: #eaf0f4;
+  --c-sunken: #e8eef3;
   --c-line: rgb(13 27 36 / 0.13);
   --c-fg: #10222c;
   --c-muted: rgb(16 34 44 / 0.66);
   --c-subtle: rgb(16 34 44 / 0.45);
+  --c-shadow: rgb(16 34 44 / 0.16);
   --c-danger: #b91c1c;
   --c-danger-soft: rgb(220 38 38 / 0.09);
   --c-danger-line: rgb(220 38 38 / 0.28);
@@ -89,20 +83,6 @@
   --c-warn: #a16207;
   --c-warn-soft: rgb(217 119 6 / 0.1);
 
-  --o-mine-bg: #e0f2fe;
-  --o-mine-fg: #075985;
-  --o-mine-line: #7dd3fc;
-  --o-mine-dot: #0ea5e9;
-
-  --o-hers-bg: #dcfce7;
-  --o-hers-fg: #065f46;
-  --o-hers-line: #6ee7b7;
-  --o-hers-dot: #10b981;
-
-  --o-ours-bg: #cffafe;
-  --o-ours-fg: #115e59;
-  --o-ours-line: #14b8a6;
-  --o-ours-dot: #0d9488;
 }
 
 /* ---------- Acentos ---------- */
@@ -110,7 +90,7 @@
 :root[data-accent='azul']:not([data-theme='light']) {
   --c-accent: #7dd3fc;
   --c-accent-fg: #062a3a;
-  --c-accent-soft: rgb(125 211 252 / 0.17);
+  --c-accent-soft: rgb(125 211 252 / 0.22);
   --c-accent-line: rgb(125 211 252 / 0.45);
 }
 :root[data-accent='azul'][data-theme='light'] {
@@ -124,7 +104,7 @@
 :root[data-accent='rosa']:not([data-theme='light']) {
   --c-accent: #f9a8d4;
   --c-accent-fg: #43092a;
-  --c-accent-soft: rgb(249 168 212 / 0.17);
+  --c-accent-soft: rgb(249 168 212 / 0.22);
   --c-accent-line: rgb(249 168 212 / 0.45);
 }
 :root[data-accent='rosa'][data-theme='light'] {
@@ -138,7 +118,7 @@
 :root[data-accent='verde']:not([data-theme='light']) {
   --c-accent: #6ee7b7;
   --c-accent-fg: #04291d;
-  --c-accent-soft: rgb(110 231 183 / 0.17);
+  --c-accent-soft: rgb(110 231 183 / 0.22);
   --c-accent-line: rgb(110 231 183 / 0.45);
 }
 :root[data-accent='verde'][data-theme='light'] {
@@ -154,6 +134,7 @@
   --c-bg: #fdf4f8;
   --c-surface: #ffffff;
   --c-elevated: #fbe9f1;
+  --c-sunken: #f7e4ee;
   --c-line: rgb(80 20 50 / 0.12);
   --c-fg: #2e0f20;
   --c-muted: rgb(46 15 32 / 0.66);
@@ -164,6 +145,7 @@
   --c-bg: #1a0d16;
   --c-surface: #26131f;
   --c-elevated: #301826;
+  --c-sunken: #200f1a;
   --c-fg: #f6e6ef;
   --c-muted: rgb(246 230 239 / 0.62);
   --c-subtle: rgb(246 230 239 / 0.38);
@@ -172,6 +154,223 @@
 :root[data-accent='verde'][data-theme='light'] {
   --c-bg: #f2f9f5;
   --c-elevated: #e5f1ea;
+  --c-sunken: #e3efe8;
+}
+
+
+/* ---------- Colores de calendario, segun el tema de color ---------- */
+/*
+ * Cada tema define TRES colores sin dueño: --p1, --p2 (las dos personas) y
+ * --p3 (la mezcla de los dos). Quien se lleva cada uno se decide mas abajo,
+ * en el bloque de reparto, para poder intercambiarlos sin duplicar los temas.
+ *
+ * Regla: el trio va en el lado OPUESTO del circulo cromatico al color del
+ * tema. El tema pinta la interfaz (botones, dia de hoy, contador, pestaña
+ * activa); el trio pinta los eventos. Si la mezcla fuera del color del tema no
+ * se distinguiria de la interfaz, asi que se pone justo enfrente.
+ *
+ *   Tema      Interfaz   p1         p2         p3 (mezcla)
+ *   azul      azul       rosa       lima       ambar
+ *   rosa      rosa       azul       amarillo   verde
+ *   verde     verde      violeta    naranja    rosa
+ *
+ * En los tres: las dos personas quedan a 120-165 grados entre si (antes eran
+ * 60), p3 es el punto medio de las dos, y ninguno de los tres se acerca a
+ * menos de 60 grados del color de la interfaz.
+ */
+
+/* --- Tema azul: rosa + lima = ambar --- */
+:root[data-accent='azul'][data-theme='dark'],
+:root[data-accent='azul']:not([data-theme='light']) {
+  --p1-bg: rgb(244 114 182 / 0.2);
+  --p1-fg: #fde0ef;
+  --p1-line: rgb(244 114 182 / 0.5);
+  --p1-dot: #f472b6;
+
+  --p2-bg: rgb(163 230 53 / 0.18);
+  --p2-fg: #e7f8c6;
+  --p2-line: rgb(163 230 53 / 0.5);
+  --p2-dot: #a3e635;
+
+  --p3-bg: rgb(251 191 36 / 0.18);
+  --p3-fg: #fdedc4;
+  --p3-line: rgb(251 191 36 / 0.5);
+  --p3-dot: #fbbf24;
+}
+:root[data-accent='azul'][data-theme='light'] {
+  --p1-bg: #fce7f3;
+  --p1-fg: #9d174d;
+  --p1-line: #f9a8d4;
+  --p1-dot: #db2777;
+
+  --p2-bg: #ecfccb;
+  --p2-fg: #3f6212;
+  --p2-line: #bef264;
+  --p2-dot: #65a30d;
+
+  --p3-bg: #fef3c7;
+  --p3-fg: #92400e;
+  --p3-line: #fcd34d;
+  --p3-dot: #d97706;
+}
+
+/* --- Tema rosa: azul + amarillo = verde --- */
+:root[data-accent='rosa'][data-theme='dark'],
+:root[data-accent='rosa']:not([data-theme='light']) {
+  --p1-bg: rgb(96 165 250 / 0.18);
+  --p1-fg: #d8e8ff;
+  --p1-line: rgb(96 165 250 / 0.5);
+  --p1-dot: #60a5fa;
+
+  --p2-bg: rgb(250 204 21 / 0.18);
+  --p2-fg: #fbf1c7;
+  --p2-line: rgb(250 204 21 / 0.5);
+  --p2-dot: #facc15;
+
+  --p3-bg: rgb(74 222 128 / 0.18);
+  --p3-fg: #d3f8de;
+  --p3-line: rgb(74 222 128 / 0.5);
+  --p3-dot: #4ade80;
+}
+:root[data-accent='rosa'][data-theme='light'] {
+  --p1-bg: #dbeafe;
+  --p1-fg: #1e40af;
+  --p1-line: #93c5fd;
+  --p1-dot: #2563eb;
+
+  /* En claro el amarillo puro no se lee: baja a oro. */
+  --p2-bg: #fef9c3;
+  --p2-fg: #854d0e;
+  --p2-line: #fde047;
+  --p2-dot: #ca8a04;
+
+  --p3-bg: #dcfce7;
+  --p3-fg: #14532d;
+  --p3-line: #86efac;
+  --p3-dot: #16a34a;
+}
+
+/* --- Tema verde: violeta + naranja = rosa --- */
+:root[data-accent='verde'][data-theme='dark'],
+:root[data-accent='verde']:not([data-theme='light']) {
+  --p1-bg: rgb(167 139 250 / 0.2);
+  --p1-fg: #e6dcfd;
+  --p1-line: rgb(167 139 250 / 0.5);
+  --p1-dot: #a78bfa;
+
+  --p2-bg: rgb(251 146 60 / 0.18);
+  --p2-fg: #ffe4cd;
+  --p2-line: rgb(251 146 60 / 0.5);
+  --p2-dot: #fb923c;
+
+  --p3-bg: rgb(244 114 182 / 0.2);
+  --p3-fg: #fde0ef;
+  --p3-line: rgb(244 114 182 / 0.5);
+  --p3-dot: #f472b6;
+}
+:root[data-accent='verde'][data-theme='light'] {
+  --p1-bg: #ede9fe;
+  --p1-fg: #5b21b6;
+  --p1-line: #c4b5fd;
+  --p1-dot: #7c3aed;
+
+  --p2-bg: #ffedd5;
+  --p2-fg: #9a3412;
+  --p2-line: #fdba74;
+  --p2-dot: #ea580c;
+
+  --p3-bg: #fce7f3;
+  --p3-fg: #9d174d;
+  --p3-line: #f9a8d4;
+  --p3-dot: #db2777;
+}
+
+/* ---------- Colores a medida ---------- */
+/*
+ * Con el tema "A mi gusto", JS escribe en el <html> los colores elegidos
+ * (--u-mine, --u-hers, --u-ours) y el de la interfaz (--u-chrome, el opuesto
+ * de "Nosotros", para que no se parezcan). De cada uno se derivan aqui las
+ * cuatro fichas con color-mix, en vez de pedir doce colores al usuario.
+ */
+:root[data-accent='propio'][data-theme='dark'],
+:root[data-accent='propio']:not([data-theme='light']) {
+  --p1-bg: color-mix(in srgb, var(--p1-dot) 20%, transparent);
+  --p1-fg: color-mix(in oklab, var(--p1-dot) 40%, white);
+  --p1-line: color-mix(in srgb, var(--p1-dot) 55%, transparent);
+  --p1-dot: color-mix(in oklab, var(--u-mine) 70%, white 30%);
+
+  --p2-bg: color-mix(in srgb, var(--p2-dot) 20%, transparent);
+  --p2-fg: color-mix(in oklab, var(--p2-dot) 40%, white);
+  --p2-line: color-mix(in srgb, var(--p2-dot) 55%, transparent);
+  --p2-dot: color-mix(in oklab, var(--u-hers) 70%, white 30%);
+
+  --p3-bg: color-mix(in srgb, var(--p3-dot) 20%, transparent);
+  --p3-fg: color-mix(in oklab, var(--p3-dot) 40%, white);
+  --p3-line: color-mix(in srgb, var(--p3-dot) 55%, transparent);
+  --p3-dot: color-mix(in oklab, var(--u-ours) 70%, white 30%);
+
+  --c-accent: color-mix(in oklab, var(--u-chrome) 70%, white 30%);
+  --c-accent-fg: color-mix(in oklab, var(--u-chrome) 22%, black);
+  --c-accent-soft: color-mix(in srgb, var(--c-accent) 24%, transparent);
+  --c-accent-line: color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+:root[data-accent='propio'][data-theme='light'] {
+  --p1-bg: color-mix(in oklab, var(--u-mine) 16%, white);
+  --p1-fg: color-mix(in oklab, var(--u-mine) 55%, black);
+  --p1-line: color-mix(in oklab, var(--u-mine) 45%, white);
+  --p1-dot: color-mix(in oklab, var(--u-mine) 88%, black 12%);
+
+  --p2-bg: color-mix(in oklab, var(--u-hers) 16%, white);
+  --p2-fg: color-mix(in oklab, var(--u-hers) 55%, black);
+  --p2-line: color-mix(in oklab, var(--u-hers) 45%, white);
+  --p2-dot: color-mix(in oklab, var(--u-hers) 88%, black 12%);
+
+  --p3-bg: color-mix(in oklab, var(--u-ours) 16%, white);
+  --p3-fg: color-mix(in oklab, var(--u-ours) 55%, black);
+  --p3-line: color-mix(in oklab, var(--u-ours) 45%, white);
+  --p3-dot: color-mix(in oklab, var(--u-ours) 88%, black 12%);
+
+  --c-accent: color-mix(in oklab, var(--u-chrome) 88%, black 12%);
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: color-mix(in oklab, var(--u-chrome) 12%, white);
+  --c-accent-line: color-mix(in oklab, var(--u-chrome) 38%, white);
+}
+
+
+/* ---------- Reparto: quien se lleva cada color ---------- */
+/*
+ * Por defecto p1 va al carril `mine` y p2 al `hers`. Con data-swap se cambian,
+ * que es lo
+ * que permite elegir cual de los dos colores del tema quiere cada uno sin
+ * tener que duplicar los seis bloques de arriba.
+ */
+:root {
+  --o-mine-bg: var(--p1-bg);
+  --o-mine-fg: var(--p1-fg);
+  --o-mine-line: var(--p1-line);
+  --o-mine-dot: var(--p1-dot);
+
+  --o-hers-bg: var(--p2-bg);
+  --o-hers-fg: var(--p2-fg);
+  --o-hers-line: var(--p2-line);
+  --o-hers-dot: var(--p2-dot);
+
+  --o-ours-bg: var(--p3-bg);
+  --o-ours-fg: var(--p3-fg);
+  --o-ours-line: var(--p3-line);
+  --o-ours-dot: var(--p3-dot);
+}
+
+:root[data-swap='1'] {
+  --o-mine-bg: var(--p2-bg);
+  --o-mine-fg: var(--p2-fg);
+  --o-mine-line: var(--p2-line);
+  --o-mine-dot: var(--p2-dot);
+
+  --o-hers-bg: var(--p1-bg);
+  --o-hers-fg: var(--p1-fg);
+  --o-hers-line: var(--p1-line);
+  --o-hers-dot: var(--p1-dot);
 }
 
 html,
@@ -238,6 +437,23 @@ body {
   background: var(--o-hers-dot);
 }
 .dot-ours {
+  background: var(--o-ours-dot);
+}
+
+.bar-mine,
+.bar-hers,
+.bar-ours {
+  width: 3px;
+  border-radius: 999px;
+  flex: none;
+}
+.bar-mine {
+  background: var(--o-mine-dot);
+}
+.bar-hers {
+  background: var(--o-hers-dot);
+}
+.bar-ours {
   background: var(--o-ours-dot);
 }
 

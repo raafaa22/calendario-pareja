@@ -3,6 +3,7 @@ import { addDays, addMonths, startOfDay } from 'date-fns'
 import { OWNERS, OWNER_STYLES, type Owner } from './lib/config'
 import { fmt, monthGridRange, weekEnd, weekStart } from './lib/dates'
 import type { AppEvent } from './lib/model'
+import { LabelsProvider, ownerLabels } from './lib/labels'
 import { isConfigured } from './lib/storage'
 import { resolveTheme } from './lib/theme'
 import { useAuth } from './hooks/useAuth'
@@ -22,8 +23,8 @@ type View = 'month' | 'week' | 'agenda' | 'free'
 
 const VIEWS: { id: View; label: string; icon: string }[] = [
   { id: 'month', label: 'Mes', icon: '▦' },
-  { id: 'week', label: 'Semana', icon: '▤' },
-  { id: 'agenda', label: 'Agenda', icon: '☰' },
+  { id: 'week', label: 'Semana', icon: '▥' },
+  { id: 'agenda', label: 'Agenda', icon: '≡' },
   { id: 'free', label: 'Huecos', icon: '◌' },
 ]
 
@@ -63,6 +64,8 @@ export default function App() {
     () => events.filter((e) => settings.visible[e.owner]),
     [events, settings.visible],
   )
+
+  const labels = useMemo(() => ownerLabels(settings), [settings])
 
   const openEvent = useCallback((event: AppEvent) => setSheet({ event }), [])
 
@@ -114,6 +117,7 @@ export default function App() {
     return (
       <Shell>
         <Login
+          appName={settings.appName}
           onLogin={login}
           error={authError}
           busy={busy}
@@ -147,201 +151,208 @@ export default function App() {
   }
 
   return (
-    <Shell>
-      <header
-        className="shrink-0 border-b border-line px-3 pb-2"
-        style={{ paddingTop: 'calc(var(--safe-top) + 0.5rem)' }}
-      >
-        {/* Quien ha entrado, y los dos ajustes que se usan a diario. */}
-        <div className="mb-2 flex items-center gap-2">
-          {profile?.picture ? (
-            <img
-              src={profile.picture}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-7 w-7 shrink-0 rounded-full"
-            />
-          ) : (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent">
-              {(profile?.givenName ?? '·').charAt(0).toUpperCase()}
-            </span>
-          )}
-          <span className="min-w-0 flex-1 truncate text-sm">
-            {profile?.givenName ? (
-              <>
-                Hola, <span className="font-semibold">{profile.givenName}</span>
-              </>
+    <LabelsProvider settings={settings}>
+      <Shell>
+        <header
+          className="shrink-0 px-3 pb-2.5"
+          style={{ paddingTop: 'calc(var(--safe-top) + 0.5rem)' }}
+        >
+          {/* Quien ha entrado, y los dos ajustes que se usan a diario. */}
+          <div className="mb-2 flex items-center gap-2">
+            {profile?.picture ? (
+              <img
+                src={profile.picture}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-7 w-7 shrink-0 rounded-full"
+              />
             ) : (
-              <span className="text-muted">Nuestro calendario</span>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-extrabold text-accent">
+                {(profile?.givenName ?? '·').charAt(0).toUpperCase()}
+              </span>
             )}
-          </span>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
-            aria-label={
-              resolveTheme(settings.theme) === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'
+            <span className="min-w-0 flex-1 truncate text-sm">
+              {profile?.givenName ? (
+                <>
+                  <span className="text-muted">Hola, </span>
+                  <span className="font-extrabold">{profile.givenName}</span>
+                </>
+              ) : (
+                <span className="font-extrabold">{settings.appName}</span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
+              aria-label={
+                resolveTheme(settings.theme) === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'
+              }
+            >
+              {resolveTheme(settings.theme) === 'dark' ? '☀' : '☾'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
+              aria-label="Ajustes"
+            >
+              ⚙
+            </button>
+          </div>
+
+          <DaysCounter appName={settings.appName} />
+
+          <div className="mt-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => step(-1)}
+              className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
+              aria-label="Anterior"
+            >
+              ‹
+            </button>
+            <h1 className="min-w-0 flex-1 truncate text-center text-[15px] font-extrabold first-letter:uppercase">
+              {view === 'month' ? fmt.monthYear(cursor) : rangeLabel(range.from, range.to)}
+            </h1>
+            <button
+              type="button"
+              onClick={() => step(1)}
+              className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
+              aria-label="Siguiente"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              onClick={goToday}
+              className="tap shrink-0 rounded-lg px-2 py-1 text-xs text-muted hover:bg-elevated"
+            >
+              Hoy
+            </button>
+            {loading && <span className="animate-pulse text-xs text-subtle">·</span>}
+          </div>
+
+          {/* Filtros por persona, con el nombre que cada uno le haya puesto */}
+          <div className="mt-2 flex items-center gap-1.5">
+            {OWNERS.map((owner) => {
+              const style = OWNER_STYLES[owner]
+              const on = settings.visible[owner]
+              return (
+                <button
+                  key={owner}
+                  type="button"
+                  onClick={() => update({ visible: { ...settings.visible, [owner]: !on } })}
+                  className={`tap flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border py-1.5 text-[11px] font-bold transition ${
+                    on ? style.chip : 'border-line text-subtle'
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${on ? style.dot : 'bg-subtle'}`}
+                  />
+                  <span className="truncate">{labels[owner]}</span>
+                </button>
+              )
+            })}
+          </div>
+        </header>
+
+        {error && (
+          <div
+            className={`shrink-0 px-3 py-1.5 text-[11px] ${
+              offline ? 'bg-warn-soft text-warn' : 'bg-danger-soft text-danger'
+            }`}
+          >
+            {error}
+          </div>
+        )}
+
+        {view === 'month' && (
+          <MonthView
+            cursor={cursor}
+            events={visible}
+            selected={selected}
+            onSelectDay={setSelected}
+            onOpenEvent={openEvent}
+          />
+        )}
+        {view === 'week' && (
+          <WeekView
+            cursor={cursor}
+            events={visible}
+            onOpenEvent={openEvent}
+            onSelectDay={(d) => {
+              setSelected(d)
+              setCursor(d)
+              setView('month')
+            }}
+          />
+        )}
+        {view === 'agenda' && (
+          <AgendaView from={range.from} to={range.to} events={visible} onOpenEvent={openEvent} />
+        )}
+        {view === 'free' && (
+          <FreeSlotsView
+            from={range.from}
+            to={range.to}
+            events={visible}
+            minMinutes={settings.minFreeSlotMinutes}
+            onMinMinutesChange={(m) => update({ minFreeSlotMinutes: m })}
+            onPickSlot={(start, end) =>
+              openNew({ start, end, owner: pickOursOwner(settings.calendars), tags: ['cita'] })
             }
-          >
-            {resolveTheme(settings.theme) === 'dark' ? '☀' : '☾'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowSettings(true)}
-            className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
-            aria-label="Ajustes"
-          >
-            ⚙
-          </button>
-        </div>
+          />
+        )}
 
-        <DaysCounter />
-
-        <div className="mt-2 flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => step(-1)}
-            className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
-            aria-label="Anterior"
-          >
-            ‹
-          </button>
-          <h1 className="min-w-0 flex-1 truncate text-center text-sm font-semibold first-letter:uppercase">
-            {view === 'month' ? fmt.monthYear(cursor) : rangeLabel(range.from, range.to)}
-          </h1>
-          <button
-            type="button"
-            onClick={() => step(1)}
-            className="tap h-8 w-8 shrink-0 rounded-lg text-muted hover:bg-elevated"
-            aria-label="Siguiente"
-          >
-            ›
-          </button>
-          <button
-            type="button"
-            onClick={goToday}
-            className="tap shrink-0 rounded-lg px-2 py-1 text-xs text-muted hover:bg-elevated"
-          >
-            Hoy
-          </button>
-          {loading && <span className="animate-pulse text-xs text-subtle">·</span>}
-        </div>
-
-        {/* Filtros por persona */}
-        <div className="mt-1.5 flex items-center gap-1.5">
-          {OWNERS.map((owner) => {
-            const style = OWNER_STYLES[owner]
-            const on = settings.visible[owner]
-            return (
+        {/*
+          Barra flotante en lugar de pegada al borde: es lo que mas separa la app
+          de la barra de pestañas plana de un calendario al uso, y deja ver que
+          el contenido sigue por debajo.
+        */}
+        <nav
+          className="shrink-0 px-3 pt-1.5"
+          style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.5rem)' }}
+        >
+          <div className="flex items-center gap-1.5 rounded-full border border-line bg-surface p-1.5 shadow-float">
+            {VIEWS.map((v) => (
               <button
-                key={owner}
+                key={v.id}
                 type="button"
-                onClick={() => update({ visible: { ...settings.visible, [owner]: !on } })}
-                className={`tap flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-1 text-[11px] font-medium transition ${
-                  on ? style.chip : 'border-line text-subtle'
+                onClick={() => setView(v.id)}
+                className={`tap flex min-w-0 flex-1 flex-col items-center gap-px rounded-full py-1.5 text-[9px] font-bold transition ${
+                  view === v.id ? 'bg-accent-soft text-accent' : 'text-subtle'
                 }`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${on ? style.dot : 'bg-subtle'}`} />
-                {style.label}
+                <span className="text-[15px] leading-none">{v.icon}</span>
+                {v.label}
               </button>
-            )
-          })}
-        </div>
-      </header>
+            ))}
 
-      {error && (
-        <div
-          className={`shrink-0 px-3 py-1.5 text-[11px] ${
-            offline ? 'bg-warn-soft text-warn' : 'bg-danger-soft text-danger'
-          }`}
-        >
-          {error}
-        </div>
-      )}
-
-      {view === 'month' && (
-        <MonthView
-          cursor={cursor}
-          events={visible}
-          selected={selected}
-          onSelectDay={setSelected}
-          onOpenEvent={openEvent}
-        />
-      )}
-      {view === 'week' && (
-        <WeekView
-          cursor={cursor}
-          events={visible}
-          onOpenEvent={openEvent}
-          onSelectDay={(d) => {
-            setSelected(d)
-            setCursor(d)
-            setView('month')
-          }}
-        />
-      )}
-      {view === 'agenda' && (
-        <AgendaView from={range.from} to={range.to} events={visible} onOpenEvent={openEvent} />
-      )}
-      {view === 'free' && (
-        <FreeSlotsView
-          from={range.from}
-          to={range.to}
-          events={visible}
-          minMinutes={settings.minFreeSlotMinutes}
-          onMinMinutesChange={(m) => update({ minFreeSlotMinutes: m })}
-          onPickSlot={(start, end) =>
-            openNew({ start, end, owner: pickOursOwner(settings.calendars), tags: ['cita'] })
-          }
-        />
-      )}
-
-      {/* Barra inferior + boton de crear */}
-      <nav
-        className="relative shrink-0 border-t border-line bg-bg"
-        style={{ paddingBottom: 'var(--safe-bottom)' }}
-      >
-        <button
-          type="button"
-          onClick={() => openNew()}
-          className="tap absolute -top-7 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl font-light text-accent-fg shadow-lg shadow-black/25"
-          aria-label="Nuevo evento"
-        >
-          ＋
-        </button>
-
-        <div className="flex">
-          {VIEWS.map((v) => (
             <button
-              key={v.id}
               type="button"
-              onClick={() => setView(v.id)}
-              className={`tap flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition ${
-                view === v.id ? 'text-accent' : 'text-subtle'
-              }`}
+              onClick={() => openNew()}
+              className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-2xl font-light text-accent-fg transition active:scale-95"
+              aria-label="Nuevo evento"
             >
-              <span className="text-base leading-none">{v.icon}</span>
-              {v.label}
+              ＋
             </button>
-          ))}
-          {/* Hueco para que el boton flotante no tape la ultima pestaña. */}
-          <div className="w-16 shrink-0" />
-        </div>
-      </nav>
+          </div>
+        </nav>
 
-      {sheet && (
-        <EventSheet
-          settings={settings}
-          event={sheet.event}
-          seed={sheet.seed}
-          onClose={() => setSheet(null)}
-          onSaved={() => {
-            setSheet(null)
-            reload()
-          }}
-        />
-      )}
-    </Shell>
+        {sheet && (
+          <EventSheet
+            settings={settings}
+            event={sheet.event}
+            seed={sheet.seed}
+            onClose={() => setSheet(null)}
+            onSaved={() => {
+              setSheet(null)
+              reload()
+            }}
+          />
+        )}
+      </Shell>
+    </LabelsProvider>
   )
 }
 

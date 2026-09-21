@@ -1,6 +1,7 @@
 import type { Owner } from './config'
+import type { PersonOwner } from './owners'
 import type { GCalEvent } from './gcal'
-import type { Accent, Theme } from './theme'
+import { DEFAULT_CUSTOM_COLORS, type Accent, type CustomColors, type Theme } from './theme'
 
 /**
  * Ajustes en localStorage. Se guardan **por cuenta de Google**, asi cada uno
@@ -9,11 +10,22 @@ import type { Accent, Theme } from './theme'
  */
 export interface CalendarLink {
   id: string
+  /** Nombre del calendario en Google. */
   summary: string
+  /** Nombre que se muestra en la app. Editable; por defecto, el de Google. */
+  label: string
   editable: boolean
 }
 
 export interface Settings {
+  /** Nombre de la app, editable en los ajustes. */
+  appName: string
+  /**
+   * Cual de los dos carriles personales es la persona que ha entrado. Es lo
+   * que hace que en cada movil se vea "Yo" en el calendario correcto: los
+   * carriles son fijos, pero quien los mira no.
+   */
+  me: PersonOwner
   calendars: Partial<Record<Owner, CalendarLink>>
   /** Filtros activos en las vistas. */
   visible: Record<Owner, boolean>
@@ -23,15 +35,25 @@ export interface Settings {
   minFreeSlotMinutes: number
   theme: Theme
   accent: Accent
+  /** Solo se usan con el tema «A mi gusto». */
+  customColors: CustomColors
+  /** Intercambia los dos colores de persona dentro del tema elegido. */
+  swapPeople: boolean
 }
 
+export const DEFAULT_APP_NAME = 'Nuestro calendario'
+
 export const DEFAULT_SETTINGS: Settings = {
+  appName: DEFAULT_APP_NAME,
+  me: 'mine',
   calendars: {},
   visible: { mine: true, hers: true, ours: true },
   defaultReminders: [30],
   minFreeSlotMinutes: 60,
   theme: 'system',
   accent: 'azul',
+  customColors: DEFAULT_CUSTOM_COLORS,
+  swapPeople: false,
 }
 
 const PREFIX = 'cp.settings'
@@ -62,6 +84,7 @@ function readAt(key: string): Settings | null {
       ...DEFAULT_SETTINGS,
       ...parsed,
       visible: { ...DEFAULT_SETTINGS.visible, ...parsed.visible },
+      customColors: { ...DEFAULT_CUSTOM_COLORS, ...parsed.customColors },
       calendars: parsed.calendars ?? {},
     }
   } catch {

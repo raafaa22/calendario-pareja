@@ -15,6 +15,8 @@ export interface AppEvent {
   title: string
   notes: string
   tags: string[]
+  /** Emoji elegido a mano. Manda sobre el icono de la etiqueta. */
+  emoji?: string
   location?: string
   start: Date
   end: Date
@@ -35,7 +37,7 @@ export function toAppEvent(
   editable: boolean,
 ): AppEvent {
   const allDay = Boolean(raw.start.date)
-  const { notes, tags } = parseDescription(raw.description)
+  const { notes, tags, emoji } = parseDescription(raw.description)
 
   return {
     id: raw.id,
@@ -44,6 +46,7 @@ export function toAppEvent(
     title: raw.summary?.trim() || '(sin título)',
     notes,
     tags,
+    emoji,
     location: raw.location,
     start: parseGCalDate(raw.start, false),
     end: parseGCalDate(raw.end, allDay),

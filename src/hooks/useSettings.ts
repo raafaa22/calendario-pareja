@@ -25,14 +25,14 @@ export function useSettings(email?: string | null) {
 
   // El tema se escribe en el <html> cada vez que cambia el ajuste.
   useEffect(() => {
-    applyTheme(settings.theme, settings.accent)
-  }, [settings.theme, settings.accent])
+    applyTheme(settings)
+  }, [settings])
 
   // En modo automatico hay que seguir al sistema si el usuario lo cambia.
   useEffect(() => {
     if (settings.theme !== 'system') return
-    return onSystemThemeChange(() => applyTheme(settings.theme, settings.accent))
-  }, [settings.theme, settings.accent])
+    return onSystemThemeChange(() => applyTheme(settings))
+  }, [settings])
 
   const update = useCallback(
     (patch: Partial<Settings> | ((s: Settings) => Settings)) => {

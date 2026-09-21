@@ -1,10 +1,15 @@
 import { OWNER_STYLES } from '../lib/config'
 import { fmt } from '../lib/dates'
+import { useOwnerLabels } from '../lib/labels'
 import type { AppEvent } from '../lib/model'
 import { getTag } from '../lib/tags'
 
-/** Icono de la primera etiqueta reconocida, que es la que define el evento. */
+/**
+ * Emoji del evento: manda el elegido a mano, y si no hay, el de la primera
+ * etiqueta reconocida.
+ */
 export function eventIcon(ev: AppEvent): string | null {
+  if (ev.emoji) return ev.emoji
   for (const id of ev.tags) {
     const tag = getTag(id)
     if (tag) return tag.icon
@@ -15,17 +20,20 @@ export function eventIcon(ev: AppEvent): string | null {
 interface Props {
   event: AppEvent
   onClick: (ev: AppEvent) => void
-  /** Compacto para las celdas del mes; completo para listas. */
+  /** `compact` va dentro de las celdas del mes; `full` en listas. */
   variant?: 'compact' | 'full'
 }
 
 export default function EventChip({ event, onClick, variant = 'compact' }: Props) {
   const style = OWNER_STYLES[event.owner]
+  const labels = useOwnerLabels()
   const icon = eventIcon(event)
 
-  // En las celdas del mes no caben ni tres letras de titulo, asi que el evento
-  // se reduce a su icono sobre el color de quien es. La lista completa del dia
-  // esta justo debajo de la rejilla, a un toque.
+  // Celda del mes: hora y nombre, y nada mas. Una celda mide unos 48px, asi
+  // que cada pixel cuenta: la hora va en formato minimo ("9", "9:30") y no hay
+  // ni barra de color ni emoji, porque el fondo del chip ya dice de quien es y
+  // con ellos no cabria el nombre. El emoji sale en la semana, en la agenda y
+  // en el detalle del dia.
   if (variant === 'compact') {
     return (
       <button
@@ -34,11 +42,13 @@ export default function EventChip({ event, onClick, variant = 'compact' }: Props
           e.stopPropagation()
           onClick(event)
         }}
-        title={event.title}
-        aria-label={event.title}
-        className={`tap flex h-[17px] w-[17px] items-center justify-center rounded border text-[10px] leading-none ${style.chip}`}
+        title={`${event.allDay ? 'Todo el día' : fmt.time(event.start)} · ${event.title}`}
+        className={`tap w-full truncate rounded-[5px] border px-[2px] py-[1px] text-left text-[8px] leading-[1.5] tracking-[-0.02em] ${style.chip}`}
       >
-        {icon ?? <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />}
+        {!event.allDay && (
+          <span className="font-extrabold tabular-nums">{fmt.timeCompact(event.start)} </span>
+        )}
+        <span className="font-semibold">{event.title}</span>
       </button>
     )
   }
@@ -47,23 +57,33 @@ export default function EventChip({ event, onClick, variant = 'compact' }: Props
     <button
       type="button"
       onClick={() => onClick(event)}
-      className={`tap flex w-full items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left ${style.chip}`}
+      className="tap group flex w-full items-stretch gap-3 rounded-2xl border border-line bg-surface p-2.5 text-left shadow-card transition active:scale-[0.99]"
     >
-      <span className="mt-px shrink-0 text-lg leading-none">{icon ?? '•'}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{event.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs opacity-75">
-          <span className="tabular-nums">
+      <span className={style.bar} />
+
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${style.chip}`}
+      >
+        {icon ?? '•'}
+      </span>
+
+      <span className="min-w-0 flex-1 self-center">
+        <span className="block truncate text-[15px] font-bold leading-tight">{event.title}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+          <span className="font-semibold tabular-nums">
             {event.allDay ? 'Todo el día' : `${fmt.time(event.start)} – ${fmt.time(event.end)}`}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className={`inline-flex items-center gap-1 ${style.text}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-            {style.label}
+            {labels[event.owner]}
           </span>
           {event.location && <span className="truncate">📍 {event.location}</span>}
         </span>
       </span>
-      {event.reminders.length > 0 && <span className="shrink-0 text-xs opacity-60">🔔</span>}
+
+      {event.reminders.length > 0 && (
+        <span className="self-center text-[11px] text-subtle">🔔</span>
+      )}
     </button>
   )
 }

@@ -13,6 +13,7 @@ export interface EventDraft {
   end: Date
   notes: string
   tags: string[]
+  emoji: string
   location: string
   reminders: number[]
   recurrence: RecurrenceSpec
@@ -33,7 +34,7 @@ function toBody(draft: EventDraft, withRecurrence: boolean): WriteBody {
 
   const body: WriteBody = {
     summary: draft.title.trim() || 'Sin título',
-    description: buildDescription(draft.notes, draft.tags) || undefined,
+    description: buildDescription(draft.notes, draft.tags, draft.emoji) || undefined,
     location: draft.location.trim() || undefined,
     // useDefault false con overrides vacio = evento sin avisos, a proposito.
     reminders: {
