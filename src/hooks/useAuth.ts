@@ -3,9 +3,9 @@ import {
   getProfile,
   isSignedIn,
   onAuthChange,
+  restoreSession,
   signIn,
   signOut,
-  trySilentSignIn,
   type Profile,
 } from '../lib/auth'
 import { GOOGLE_CLIENT_ID } from '../lib/config'
@@ -26,21 +26,17 @@ export function useAuth() {
     [],
   )
 
-  // Al arrancar se intenta renovar el token sin molestar. Solo si falla se
-  // muestra la pantalla de login.
+  // Al arrancar solo se mira si hay sesion guardada. Es inmediato: no se
+  // consulta a Google, porque su cliente de tokens abre una emergente y una
+  // emergente sin toque del usuario la bloquea el navegador (y tarda varios
+  // segundos en rendirse, que es lo que dejaba la app en la pantalla de carga).
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
       setError('Falta configurar VITE_GOOGLE_CLIENT_ID (mira el README).')
-      setChecking(false)
-      return
+    } else {
+      restoreSession()
     }
-    let alive = true
-    trySilentSignIn().finally(() => {
-      if (alive) setChecking(false)
-    })
-    return () => {
-      alive = false
-    }
+    setChecking(false)
   }, [])
 
   const login = useCallback(async () => {
@@ -49,11 +45,34 @@ export function useAuth() {
     try {
       await signIn()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se ha podido iniciar sesión')
+      setError(friendlyError(e))
     } finally {
       setBusy(false)
     }
   }, [])
 
   return { signedIn, profile, checking, busy, error, login, logout: signOut }
+}
+
+/**
+ * Los errores de Google Identity Services vienen en ingles y con nombres
+ * internos. Se traducen los que se ven de verdad, y el resto pasa tal cual.
+ */
+function friendlyError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e)
+  const key = raw.toLowerCase()
+
+  if (key.includes('popup') && (key.includes('open') || key.includes('block'))) {
+    return 'El navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes para este sitio y vuelve a intentarlo.'
+  }
+  if (key.includes('popup_closed') || key.includes('closed')) {
+    return 'Has cerrado la ventana de Google antes de entrar.'
+  }
+  if (key.includes('access_denied') || key.includes('denied')) {
+    return 'No se han concedido los permisos, así que la app no puede ver los calendarios.'
+  }
+  if (key.includes('idpiframe') || key.includes('gsi') || key.includes('network')) {
+    return 'No se ha podido contactar con Google. Comprueba la conexión y vuelve a intentarlo.'
+  }
+  return raw || 'No se ha podido iniciar sesión'
 }

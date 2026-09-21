@@ -165,24 +165,38 @@ src/
   components/        Vistas y formulario
 ```
 
-### Sobre no tener que entrar todo el rato
+### Sobre la sesión
 
-Una app sin servidor tiene un techo aquí que conviene conocer: Google solo emite
-tokens de **una hora** y no entrega *refresh token* a una aplicación que no
-puede guardar un secreto. No hay forma de saltárselo sin montar un backend.
+Esto tiene un techo real, y conviene conocerlo antes de que sorprenda:
 
-Lo que sí hace la app para que no se note:
+1. **Google solo emite tokens de una hora** y no entrega *refresh token* a una
+   aplicación que no puede guardar un secreto. Sin backend no hay forma de
+   saltárselo.
+2. **El cliente de tokens de Google funciona con una ventana emergente**, y una
+   emergente que no nace de un toque del usuario la bloquea el navegador. No
+   existe un modo silencioso de verdad.
 
-1. Guarda el token en `localStorage`, así cerrar la app y volver a abrirla
-   dentro de esa hora no pide nada.
-2. Recuerda con qué cuenta entraste y se lo pasa a Google como `hint`, de modo
-   que la renovación silenciosa acierta de cuenta sin preguntar, incluso con
-   varias cuentas abiertas en el navegador.
-3. Renueva en silencio al arrancar y cada vez que la API responde 401.
+Por eso la app **no intenta renovar por su cuenta**. Lo que hace:
 
-En la práctica el botón de Google solo reaparece si Google cierra su propia
-sesión en ese navegador o si cierras sesión a mano. Si te pasa a menudo,
-publica la app en https://console.cloud.google.com/auth/audience.
+- Guarda el token en `localStorage`, así cerrar la app y volver a abrirla dentro
+  de esa hora no pide nada.
+- Recuerda con qué cuenta entraste, para dirigir el siguiente acceso a esa
+  cuenta (`hint`) y poder saludarte por tu nombre.
+- Cuando el token caduca, vuelve a la pantalla de entrada. **Un toque**, sin
+  elegir cuenta ni volver a dar permisos, porque Google ya los recuerda.
+
+En la práctica: si usas la app varias veces al día, casi nunca verás el botón;
+si la abres una vez cada mañana, tocarás «Entrar como…» una vez y listo.
+
+> Un aviso por si alguna vez se toca este código: **llamar al cliente de tokens
+> al arrancar no funciona.** Intenta abrir la emergente, el navegador la bloquea
+> y tarda unos 6 segundos en rendirse, con la app parada en la pantalla de carga
+> todo ese rato. Fue exactamente el fallo que tuvo la primera versión.
+
+Si algún día molesta ese toque, el arreglo de verdad es cambiar a **redirección
+de página completa con `prompt=none`**: Google devuelve un token nuevo sin
+ninguna interacción. Cuesta registrar una URI de redirección en Google Cloud y
+reescribir `src/lib/auth.ts`.
 
 ### Quién es quién
 

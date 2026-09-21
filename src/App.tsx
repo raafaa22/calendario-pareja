@@ -31,7 +31,7 @@ const VIEWS: { id: View; label: string; icon: string }[] = [
 export default function App() {
   const { signedIn, profile, checking, busy, error: authError, login, logout } = useAuth()
   // Los ajustes son de la cuenta que ha entrado: tema, acento y calendarios.
-  const { settings, update, ready } = useSettings(profile?.email)
+  const { settings, update } = useSettings(profile?.email)
 
   const [view, setView] = useState<View>('month')
   const [showSettings, setShowSettings] = useState(false)
@@ -103,7 +103,7 @@ export default function App() {
   const toggleTheme = () =>
     update({ theme: resolveTheme(settings.theme) === 'dark' ? 'light' : 'dark' })
 
-  if (checking || !ready) {
+  if (checking) {
     return (
       <Shell>
         <div className="flex flex-1 items-center justify-center">

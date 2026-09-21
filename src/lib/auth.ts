@@ -4,18 +4,28 @@ import { GOOGLE_CLIENT_ID, GOOGLE_SCOPES } from './config'
  * OAuth sin backend: el flujo implicito de Google Identity Services entrega un
  * access token directamente al navegador.
  *
- * Sobre la persistencia de la sesion, que tiene un techo real: Google solo
- * emite tokens de una hora y no da refresh token a una app sin servidor. Lo
- * que si se puede hacer, y es lo que hace este modulo, es:
+ * DOS LIMITES que conviene tener claros, porque marcan el diseno de todo esto:
  *
- *  1. Guardar el token en localStorage (no sessionStorage), para que cerrar la
- *     app y volver a abrirla dentro de esa hora no pida nada.
- *  2. Recordar con que cuenta se entro y pasarsela a Google como `hint`, para
- *     que la renovacion silenciosa acierte de cuenta sin preguntar.
- *  3. Renovar en silencio al arrancar y cada vez que la API responde 401.
+ *  1. Google solo emite tokens de UNA HORA y no da refresh token a una app que
+ *     no puede guardar un secreto. Sin servidor no hay forma de saltarselo.
+ *  2. El cliente de tokens de GIS funciona con una VENTANA EMERGENTE, y una
+ *     emergente que no nace de un toque del usuario la bloquea el navegador.
+ *     No existe modo silencioso de verdad: llamarlo al arrancar solo consigue
+ *     que el navegador bloquee la emergente, y encima tarda varios segundos en
+ *     rendirse.
  *
- * Con eso el boton de Google solo reaparece si Google cierra su propia sesion
- * en el navegador o si se cierra sesion a mano.
+ * Asi que este modulo NO intenta renovar por su cuenta. Lo que hace es:
+ *
+ *  - Guardar el token en localStorage, para que cerrar la app y volver a
+ *    abrirla dentro de esa hora no pida nada.
+ *  - Recordar con que cuenta se entro, para dirigir el siguiente acceso a esa
+ *    cuenta (`hint`) y poder saludar por su nombre.
+ *  - Cuando el token caduca, volver a la pantalla de entrada. Un toque, sin
+ *    elegir cuenta ni volver a dar permisos.
+ *
+ * Para que fuera de verdad automatico habria que cambiar a redireccion de
+ * pagina completa con `prompt=none`, que si vuelve con un token nuevo sin
+ * interaccion. Eso obliga a registrar una URI de redireccion en Google Cloud.
  */
 
 interface TokenResponse {
@@ -168,23 +178,31 @@ export function getProfile(): Profile | null {
 }
 
 /**
- * Devuelve un token valido. Si `interactive` es false intenta renovarlo sin
- * mostrar nada, apoyandose en la cuenta recordada.
+ * Devuelve el token guardado si sigue vivo. No habla con Google: hacerlo aqui
+ * significaria abrir una emergente sin un toque del usuario, que el navegador
+ * bloquea. Si ha caducado, se avisa a la app para que muestre la entrada.
  */
-export async function getToken(interactive = false): Promise<string> {
+export async function getToken(): Promise<string> {
   if (isSignedIn()) return token!
+  invalidateToken()
+  throw new Error('La sesión ha caducado. Vuelve a entrar con Google.')
+}
+
+/** Entrada con Google. Solo se llama desde un toque del usuario. */
+export async function signIn(): Promise<void> {
   await initAuth()
   if (pending) throw new Error('Ya hay una autorización en curso')
 
-  return new Promise<string>((resolve, reject) => {
+  await new Promise<string>((resolve, reject) => {
     pending = { resolve, reject }
     try {
       client!.requestAccessToken({
-        // prompt vacio = intento silencioso; 'consent' fuerza la pantalla.
-        prompt: interactive ? 'consent' : '',
-        // Con el correo recordado, Google renueva sobre esa cuenta sin
-        // preguntar cual, incluso si hay varias abiertas en el navegador.
-        ...(profile?.email && !interactive ? { hint: profile.email } : {}),
+        // Vacio (no 'consent'): si ya se dieron los permisos, Google no vuelve
+        // a preguntar y entra directo.
+        prompt: '',
+        // Con el correo recordado no hay que elegir cuenta, aunque haya varias
+        // abiertas en el navegador.
+        ...(profile?.email ? { hint: profile.email } : {}),
       })
     } catch (e) {
       pending = null
@@ -193,24 +211,16 @@ export async function getToken(interactive = false): Promise<string> {
   })
 }
 
-export async function signIn(): Promise<void> {
-  await getToken(true)
-}
-
-/** Intento silencioso al arrancar. No lanza: si falla, se muestra el login. */
-export async function trySilentSignIn(): Promise<boolean> {
-  if (isSignedIn()) {
-    // Token valido de una sesion anterior: conviene confirmar que el perfil
-    // guardado sigue siendo el de esa cuenta.
-    void refreshProfile()
-    return true
-  }
-  try {
-    await getToken(false)
-    return true
-  } catch {
-    return false
-  }
+/**
+ * Recupera la sesion guardada al arrancar. Es sincrono a proposito: no hay
+ * nada que preguntarle a Google, asi que la app no tiene por que ensenar una
+ * pantalla de carga mientras espera.
+ */
+export function restoreSession(): boolean {
+  if (!isSignedIn()) return false
+  // Confirma que el perfil guardado sigue siendo el de esa cuenta.
+  void refreshProfile()
+  return true
 }
 
 export function signOut(): void {

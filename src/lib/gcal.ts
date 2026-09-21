@@ -49,9 +49,10 @@ export class GCalError extends Error {
 
 /**
  * Llamada a la API. Si Google responde 401 el token ha caducado antes de lo
- * previsto: se invalida y se reintenta una vez con uno nuevo.
+ * previsto: se invalida, lo que hace que la app vuelva a la pantalla de
+ * entrada, y se corta aqui.
  */
-async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getToken()
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -62,9 +63,9 @@ async function api<T>(path: string, init: RequestInit = {}, retry = true): Promi
     },
   })
 
-  if (res.status === 401 && retry) {
+  if (res.status === 401) {
     invalidateToken()
-    return api<T>(path, init, false)
+    throw new GCalError('La sesión ha caducado. Vuelve a entrar con Google.', 401)
   }
 
   if (!res.ok) {
