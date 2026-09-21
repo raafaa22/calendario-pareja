@@ -249,32 +249,46 @@ export default function SetupCalendars({
                   />
                 )}
 
-                <select
-                  value={current?.id ?? ''}
-                  onChange={(e) =>
-                    assign(owner, calendars.find((c) => c.id === e.target.value) ?? null)
-                  }
-                  className="w-full appearance-none rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm outline-none focus:border-accent-line"
-                >
-                  <option value="">— Sin asignar —</option>
-                  {calendars.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.summary}
-                      {c.primary ? ' (principal)' : ''}
-                      {c.accessRole === 'reader' ? ' · solo lectura' : ''}
-                    </option>
-                  ))}
-                </select>
+                {/*
+                  El conjunto no se elige: es unico y lo deduce la app, porque
+                  elegirlo a mano es como acababais con dos calendarios
+                  distintos. Si se ha liado, «Volver a la configuracion guiada»
+                  lo vuelve a detectar.
+                */}
+                {isPerson(owner) ? (
+                  <select
+                    value={current?.id ?? ''}
+                    onChange={(e) =>
+                      assign(owner, calendars.find((c) => c.id === e.target.value) ?? null)
+                    }
+                    className="w-full appearance-none rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm outline-none focus:border-accent-line"
+                  >
+                    <option value="">— Sin asignar —</option>
+                    {calendars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.summary}
+                        {c.primary ? ' (principal)' : ''}
+                        {c.accessRole === 'reader' ? ' · solo lectura' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="rounded-2xl border border-line bg-elevated px-3.5 py-2.5 text-sm text-muted">
+                    {current?.summary ?? '— Sin asignar —'}
+                  </div>
+                )}
 
                 <div className="mt-2.5 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleCreate(owner)}
-                    disabled={busyOwner === owner}
-                    className="tap text-xs font-semibold text-accent underline decoration-accent-line disabled:opacity-50"
-                  >
-                    Crear «{suggested[owner]}»
-                  </button>
+                  {isPerson(owner) && (
+                    <button
+                      type="button"
+                      onClick={() => handleCreate(owner)}
+                      disabled={busyOwner === owner}
+                      className="tap text-xs font-semibold text-accent underline decoration-accent-line disabled:opacity-50"
+                    >
+                      Crear «{suggested[owner]}»
+                    </button>
+                  )}
 
                   {current && (
                     <>
@@ -288,32 +302,36 @@ export default function SetupCalendars({
                       >
                         Compartir…
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPanel(
-                            open && panel?.kind === 'remove' ? null : { owner, kind: 'remove' },
-                          )
-                          setMsg(null)
-                        }}
-                        className="tap text-xs text-danger underline decoration-danger-line"
-                      >
-                        Quitar…
-                      </button>
+                      {isPerson(owner) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPanel(
+                              open && panel?.kind === 'remove' ? null : { owner, kind: 'remove' },
+                            )
+                            setMsg(null)
+                          }}
+                          className="tap text-xs text-danger underline decoration-danger-line"
+                        >
+                          Quitar…
+                        </button>
+                      )}
                     </>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setByIdOwner(byIdOwner === owner ? null : owner)
-                      setByIdValue('')
-                      setMsg(null)
-                    }}
-                    className="tap text-xs text-muted underline decoration-line"
-                  >
-                    No me sale en la lista…
-                  </button>
+                  {isPerson(owner) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setByIdOwner(byIdOwner === owner ? null : owner)
+                        setByIdValue('')
+                        setMsg(null)
+                      }}
+                      className="tap text-xs text-muted underline decoration-line"
+                    >
+                      No me sale en la lista…
+                    </button>
+                  )}
 
                   {current && !current.editable && (
                     <span className="text-xs text-warn">solo lectura</span>

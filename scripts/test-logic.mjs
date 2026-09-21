@@ -129,39 +129,72 @@ eq('candidatos a conjunto', g.ourCalendarCandidates(lista).map((c) => c.id),
    ['nosotros@group.calendar.google.com'])
 eq('sin candidatos si solo hay personales', g.ourCalendarCandidates([lista[0], lista[3]]).map((c) => c.id), [])
 
-// Elegir el conjunto entre varios candidatos: preseleccionar mal es peor que
-// no preseleccionar, porque lo que ya viene puesto se da por bueno.
+// El conjunto no se elige: se deduce, y siempre igual con la misma lista, para
+// que los dos moviles acaben en el MISMO calendario.
 const pick = (l) => g.pickOurCalendar(l)?.id ?? null
+const marcado = { description: `Calendario de los dos. ${g.SHARED_MARKER}` }
+
 eq('con uno solo, ese', pick(lista), 'nosotros@group.calendar.google.com')
 eq('sin candidatos, ninguno', pick([lista[0], lista[1]]), null)
-// Su movil: el conjunto se lo ha compartido el, los suyos son suyos.
+
+// La marca manda sobre todo lo demas.
+eq('gana el que lleva la marca', pick([
+  lista[0],
+  cal('otro@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('bueno@group.calendar.google.com', { summary: 'Cualquier cosa', accessRole: 'owner', ...marcado }),
+]), 'bueno@group.calendar.google.com')
+
+// Sin marca, gana el que te han compartido: los tuyos sueltos los tienes tu.
 eq('gana el que te han compartido', pick([
   lista[0],
-  cal('mia@group.calendar.google.com', { accessRole: 'owner' }),
-  cal('nosotros@group.calendar.google.com', { accessRole: 'writer' }),
-]), 'nosotros@group.calendar.google.com')
-// Su movil con restos de una configuracion vieja: todos suyos, decide el nombre.
-eq('si todos son tuyos, decide el nombre', pick([
+  cal('mia@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('suya@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'writer' }),
+]), 'suya@group.calendar.google.com')
+
+// Sin marca ni nada compartido, gana el que tiene cosas apuntadas: con dos
+// "Nosotros" de versiones anteriores, el bueno es el que no esta vacio.
+const dosNosotros = [
   lista[0],
-  cal('miagenda@group.calendar.google.com', { summary: 'Mi agenda', accessRole: 'owner' }),
-  cal('nosotros@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
-]), 'nosotros@group.calendar.google.com')
-eq('tambien reconoce otros nombres', pick([
+  cal('vacio@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('lleno@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+]
+eq('gana el que tiene eventos', g.pickOurCalendar(dosNosotros, {
+  'vacio@group.calendar.google.com': 0,
+  'lleno@group.calendar.google.com': 12,
+})?.id, 'lleno@group.calendar.google.com')
+// Pero la marca manda sobre el numero de eventos.
+eq('la marca gana aunque este vacio', g.pickOurCalendar([
   lista[0],
-  cal('a@group.calendar.google.com', { summary: 'Trabajo', accessRole: 'owner' }),
-  cal('b@group.calendar.google.com', { summary: 'Los dos', accessRole: 'owner' }),
-]), 'b@group.calendar.google.com')
-// Dos igual de plausibles: mejor no elegir por el usuario.
-eq('si hay empate no elige', pick([
+  cal('lleno@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('marcado@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner', ...marcado }),
+], { 'lleno@group.calendar.google.com': 30, 'marcado@group.calendar.google.com': 0 })?.id,
+  'marcado@group.calendar.google.com')
+eq('reconoce la marca', [
+  g.hasSharedMarker(cal('x', marcado)),
+  g.hasSharedMarker(cal('y', { summary: 'Nosotros' })),
+], [true, false])
+
+// Sin ninguna pista, decide el ID, que no cambia: asi los dos moviles eligen
+// el mismo aunque Google devuelva la lista en otro orden.
+const empate = [
   lista[0],
-  cal('a@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
-  cal('b@group.calendar.google.com', { summary: 'Pareja', accessRole: 'owner' }),
-]), null)
-eq('sin pistas tampoco elige', pick([
+  cal('bbb@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('aaa@group.calendar.google.com', { summary: 'Pareja', accessRole: 'owner' }),
+]
+eq('con empate, siempre el mismo', pick(empate), 'aaa@group.calendar.google.com')
+eq('y no depende del orden de la lista', pick([...empate].reverse()), 'aaa@group.calendar.google.com')
+
+// Nunca un calendario de persona ni uno de Google.
+eq('el de la pareja no vale como conjunto', pick([lista[0], lista[3]]), null)
+eq('los festivos tampoco', pick([lista[0], lista[1]]), null)
+
+// Los duplicados a limpiar: los tuyos que parecen el conjunto y no se usan.
+eq('duplicados del conjunto', g.duplicateSharedCalendars([
   lista[0],
-  cal('a@group.calendar.google.com', { summary: 'Trabajo', accessRole: 'owner' }),
-  cal('b@group.calendar.google.com', { summary: 'Gym', accessRole: 'owner' }),
-]), null)
+  cal('usado@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'owner' }),
+  cal('sobra@group.calendar.google.com', { summary: 'Los dos', accessRole: 'owner' }),
+  cal('suyo@group.calendar.google.com', { summary: 'Nosotros', accessRole: 'writer' }),
+], 'usado@group.calendar.google.com').map((c) => c.id), ['sobra@group.calendar.google.com'])
 
 // --- quien es quien en cada movil ---
 // Los carriles son fijos en los dos telefonos, asi que el nombre que se ensena

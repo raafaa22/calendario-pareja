@@ -8,7 +8,8 @@ import {
 } from '../lib/anniversaries'
 import type { Profile } from '../lib/auth'
 import { OWNERS, RELATIONSHIP_START } from '../lib/config'
-import { deleteCalendar, listCalendars, type GCalCalendar } from '../lib/gcal'
+import { countEvents, deleteCalendar, listCalendars, type GCalCalendar } from '../lib/gcal'
+import { looksShared } from '../lib/calendarGuess'
 import { elapsedLabel } from '../lib/dates'
 import { ownerLabels } from '../lib/labels'
 import { DEFAULT_APP_NAME, clearEventCache, type Settings } from '../lib/storage'
@@ -848,6 +849,8 @@ function AnniversaryCleanup({
 
 function CalendarCleanup({ settings }: { settings: Settings }) {
   const [calendars, setCalendars] = useState<GCalCalendar[] | null>(null)
+  /** Cuantos eventos tiene cada uno, para no borrar nada a ciegas. */
+  const [counts, setCounts] = useState<Record<string, number>>({})
   const [chosen, setChosen] = useState<Set<string>>(new Set())
   const [armed, setArmed] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -867,7 +870,21 @@ function CalendarCleanup({ settings }: { settings: Settings }) {
     setBusy(true)
     setMsg(null)
     try {
-      setCalendars(await listCalendars())
+      const list = await listCalendars()
+      setCalendars(list)
+
+      // Cuantos eventos tiene cada uno de los que sobran. Es la diferencia
+      // entre borrar un resto vacio y cargarse cosas apuntadas.
+      const inUseNow = new Set(
+        OWNERS.map((o) => settings.calendars[o]?.id).filter(Boolean) as string[],
+      )
+      const spareNow = list.filter(
+        (c) => c.accessRole === 'owner' && !c.primary && !inUseNow.has(c.id),
+      )
+      const pairs = await Promise.all(
+        spareNow.map(async (c) => [c.id, await countEvents(c.id).catch(() => -1)] as const),
+      )
+      setCounts(Object.fromEntries(pairs))
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'No se han podido cargar')
     } finally {
@@ -910,7 +927,7 @@ function CalendarCleanup({ settings }: { settings: Settings }) {
   return (
     <Card
       title="Calendarios sueltos"
-      hint="Los que son tuyos y la app no está usando: restos de pruebas o de configuraciones anteriores. Tu calendario principal y los tres en uso no salen aquí."
+      hint="Los que son tuyos y la app no está usando: restos de pruebas o de configuraciones anteriores. Tu calendario principal y los tres en uso no salen aquí. Se indica cuántos eventos tiene cada uno para que no borres nada a ciegas."
     >
       {calendars === null ? (
         <button
@@ -931,7 +948,19 @@ function CalendarCleanup({ settings }: { settings: Settings }) {
                 key={c.id}
                 className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-elevated px-3 py-2.5"
               >
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{c.summary}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{c.summary}</span>
+                  <span className="mt-0.5 block text-[11px] text-subtle">
+                    {counts[c.id] === undefined
+                      ? 'contando…'
+                      : counts[c.id] < 0
+                        ? 'no se han podido contar los eventos'
+                        : counts[c.id] === 0
+                          ? 'vacío'
+                          : `${counts[c.id]} ${counts[c.id] === 1 ? 'evento' : 'eventos'}`}
+                    {looksShared(c) && ' · parece otro «de los dos»'}
+                  </span>
+                </span>
                 <input
                   type="checkbox"
                   checked={chosen.has(c.id)}

@@ -102,8 +102,10 @@ ningún desplegable:
   se detecta solo**: su correo está a la vista en tu lista de calendarios,
   porque el ID de su principal *es* su correo. Sale rellenado con una etiqueta
   «detectado», y se puede cambiar.
-- **El de los dos** → si tu pareja ya lo creó y te lo compartió, el asistente lo
-  encuentra y lo reutiliza; si no, crea «Nosotros».
+- **El de los dos** → **no se elige.** Es único y lo deduce la app: si ya existe
+  lo reutiliza, y si no, lo crea. Poder elegirlo en un desplegable era
+  justamente lo que acababa con dos calendarios conjuntos distintos, uno en
+  cada móvil.
 
 El asistente distingue un calendario de persona de uno de Google (grupos,
 festivos, cumpleaños) por el ID: los de Google acaban en `calendar.google.com`.
@@ -145,11 +147,27 @@ enseña en qué está ahora mismo, para no tener que entrar a mirar.
 > configuración guiada**: vacía el reparto de este dispositivo y lanza el
 > asistente otra vez. No toca nada en Google.
 
-Al elegir el calendario conjunto, el asistente preselecciona el que mejor pinta
-tiene: primero uno que te haya compartido otra persona, y si no, por el nombre
-(«Nosotros», «Los dos», «Pareja»…). Si hay empate no preselecciona ninguno y
-avisa, porque dar por bueno lo que ya viene puesto es justo como acaban dos
-calendarios conjuntos distintos. Y si te han compartido uno pero no te aparece en la
+Para dar siempre con **el mismo** calendario conjunto desde los dos móviles, la
+app le escribe una marca en la descripción (`[calendario-pareja]`) y lo busca
+por ahí. Si el elegido no la lleva —porque lo creó una versión anterior— **se la
+pone**, y a partir de entonces ya no hay nada que adivinar.
+
+Mientras tanto, las pistas se comparan por orden (no se suman: una pista mejor
+gana siempre):
+
+1. **La marca.**
+2. **Que te lo haya compartido otra persona** — los tuyos sueltos los tienes tú,
+   así que uno compartido es casi seguro el de los dos.
+3. **Cuántos eventos tiene.** Con dos «Nosotros» de versiones anteriores, el
+   bueno es el que tiene cosas apuntadas. Sin esto se elegiría casi al azar y
+   podrías acabar mirando el vacío, pensando que has perdido los eventos. Solo
+   se cuentan cuando hace falta desempatar.
+4. **El ID**, que no cambia, para que los dos móviles elijan el mismo aunque
+   Google devuelva la lista en otro orden.
+
+Por lo mismo, en **Ajustes → Los calendarios** los dos personales se pueden
+cambiar, pero el conjunto sale fijo, sin desplegable. Si se lía, **Volver a la
+configuración guiada** lo vuelve a detectar. Y si te han compartido uno pero no te aparece en la
 lista (pasa cuando Google se queda esperando que aceptes la invitación por
 correo), el enlace **«No me sale en la lista…»** lo añade pegando su ID.
 
@@ -192,9 +210,12 @@ eventos sueltos con la cuenta que probó una versión intermedia).
   quieras.
 - **Calendarios sueltos** — los que son tuyos y la app no usa: restos de
   pruebas o de configuraciones anteriores. Tu calendario principal, los tres en
-  uso y los que no son tuyos no aparecen. Va con casillas y una confirmación
-  que dice exactamente qué se pierde, porque borrar un calendario de Google se
-  lleva sus eventos para siempre y para todos los que lo tengan compartido.
+  uso y los que no son tuyos no aparecen. **Cada uno dice cuántos eventos
+  tiene**, y marca los que parecen otro «de los dos», para que sepas cuáles
+  están vacíos y cuáles no antes de tocar nada. Va con casillas y una
+  confirmación que dice exactamente qué se pierde, porque borrar un calendario
+  de Google se lleva sus eventos para siempre y para todos los que lo tengan
+  compartido.
 
 ## Desplegar gratis
 

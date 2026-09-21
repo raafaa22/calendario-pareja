@@ -33,6 +33,7 @@ export interface GCalEvent {
 export interface GCalCalendar {
   id: string
   summary: string
+  description?: string
   primary?: boolean
   accessRole: string
   backgroundColor?: string
@@ -90,6 +91,17 @@ export async function listCalendars(): Promise<GCalCalendar[]> {
   return res.items ?? []
 }
 
+/** Cambia los datos de un calendario que sea tuyo (nombre, descripcion…). */
+export async function updateCalendar(
+  calendarId: string,
+  patch: { summary?: string; description?: string },
+): Promise<GCalCalendar> {
+  return api<GCalCalendar>(`/calendars/${encodeURIComponent(calendarId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
 /**
  * Anade a la lista del usuario un calendario al que ya tiene acceso, sabiendo
  * su ID. Es lo que resuelve el caso de "me lo ha compartido pero no me sale":
@@ -105,11 +117,27 @@ export async function addCalendarToList(calendarId: string): Promise<GCalCalenda
   })
 }
 
-export async function createCalendar(summary: string): Promise<GCalCalendar> {
+export async function createCalendar(
+  summary: string,
+  description?: string,
+): Promise<GCalCalendar> {
   return api<GCalCalendar>('/calendars', {
     method: 'POST',
-    body: JSON.stringify({ summary, timeZone: localTimeZone() }),
+    body: JSON.stringify({ summary, description, timeZone: localTimeZone() }),
   })
+}
+
+/** Cuantos eventos tiene un calendario. Para saber que se pierde al borrarlo. */
+export async function countEvents(calendarId: string): Promise<number> {
+  const params = new URLSearchParams({
+    singleEvents: 'false',
+    maxResults: '250',
+    fields: 'items/id',
+  })
+  const res = await api<{ items?: { id: string }[] }>(
+    `/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+  )
+  return res.items?.length ?? 0
 }
 
 /**

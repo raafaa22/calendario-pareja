@@ -50,24 +50,79 @@ export function ourCalendarCandidates(list: GCalCalendar[]): GCalCalendar[] {
 const COUPLE_NAME = /\b(nosotros|nosotras|los\s+dos|las\s+dos|pareja|juntos|juntas)\b/i
 
 /**
- * De entre los candidatos, cual es probablemente el calendario conjunto.
- * Devuelve null si no esta claro: preseleccionar mal es peor que no
- * preseleccionar, porque el usuario da por bueno lo que ya viene puesto.
- *
- * El orden de las pistas no es casual:
- *  1. Si te lo ha compartido otra persona, es casi seguro el conjunto: los
- *     tuyos sueltos los tienes tu.
- *  2. Si no, por el nombre, que descarta restos de configuraciones viejas
- *     ("Mi agenda") sin tener que saber de donde salieron.
+ * Marca que la app escribe en la descripcion del calendario conjunto que crea.
+ * Es lo que permite que los dos moviles den con EL MISMO calendario sin que
+ * nadie tenga que elegirlo en un desplegable: el nombre se puede cambiar, la
+ * marca no.
  */
-export function pickOurCalendar(list: GCalCalendar[]): GCalCalendar | null {
-  const candidates = ourCalendarCandidates(list)
+export const SHARED_MARKER = '[calendario-pareja]'
+
+export const SHARED_DESCRIPTION = `Calendario de los dos. ${SHARED_MARKER}`
+
+/** ¿Lleva la marca que pone la app al crear el calendario conjunto? */
+export function hasSharedMarker(c: GCalCalendar): boolean {
+  return Boolean(c.description?.includes(SHARED_MARKER))
+}
+
+/** ¿Este calendario puede ser el conjunto? */
+export function looksShared(c: GCalCalendar): boolean {
+  if (c.primary || isPersonalEmailId(c.id)) return false
+  if (hasSharedMarker(c)) return true
+  return COUPLE_NAME.test(c.summary ?? '')
+}
+
+/**
+ * El calendario conjunto. No se elige: se deduce, y siempre da el mismo
+ * resultado con la misma lista, para que los dos moviles acaben en el mismo.
+ *
+ * El orden de las pistas:
+ *  1. La marca que pone la app, que es la unica señal fiable.
+ *  2. Que te lo haya compartido otra persona: los tuyos sueltos los tienes tu,
+ *     asi que uno compartido es casi seguro el de los dos.
+ *  3. El nombre, para los creados antes de que existiera la marca.
+ *
+ * A igualdad de pistas se ordena por ID, que no cambia, para que la respuesta
+ * no dependa del orden en que Google devuelva la lista.
+ */
+export function pickOurCalendar(
+  list: GCalCalendar[],
+  eventCounts?: Record<string, number>,
+): GCalCalendar | null {
+  const candidates = list.filter(looksShared)
   if (candidates.length <= 1) return candidates[0] ?? null
 
-  const shared = candidates.filter((c) => c.accessRole !== 'owner')
-  if (shared.length === 1) return shared[0]
+  /*
+   * Se comparan las pistas por orden, no se suman: una pista mejor gana
+   * siempre, por mucho que la otra tenga muchos eventos.
+   */
+  const rank = (c: GCalCalendar) => [
+    hasSharedMarker(c) ? 1 : 0,
+    c.accessRole !== 'owner' ? 1 : 0,
+    // Con dos calendarios "Nosotros" de versiones anteriores, el bueno es el
+    // que tiene cosas apuntadas. Sin esto se elegiria casi al azar y podrias
+    // acabar mirando el vacio, pensando que has perdido los eventos.
+    eventCounts?.[c.id] ?? 0,
+  ]
 
-  const pool = shared.length > 1 ? shared : candidates
-  const named = pool.filter((c) => COUPLE_NAME.test(c.summary ?? ''))
-  return named.length === 1 ? named[0] : null
+  return [...candidates].sort((a, b) => {
+    const ra = rank(a)
+    const rb = rank(b)
+    for (let i = 0; i < ra.length; i++) {
+      if (ra[i] !== rb[i]) return rb[i] - ra[i]
+    }
+    // Ultimo desempate: el ID, que no cambia, para que los dos moviles elijan
+    // el mismo aunque Google devuelva la lista en otro orden.
+    return a.id.localeCompare(b.id)
+  })[0]
+}
+
+/**
+ * Los conjuntos que sobran: todo lo que parece el calendario de los dos y no
+ * es el que se esta usando. Son los duplicados a limpiar.
+ */
+export function duplicateSharedCalendars(
+  list: GCalCalendar[],
+  keepId?: string,
+): GCalCalendar[] {
+  return list.filter((c) => looksShared(c) && c.id !== keepId && c.accessRole === 'owner')
 }
