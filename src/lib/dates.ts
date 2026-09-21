@@ -61,6 +61,26 @@ export const fmt = {
   inputDate: (d: Date) => format(d, 'yyyy-MM-dd'),
 }
 
+/**
+ * Cuanto llevabais juntos en una fecha dada: «3 años y 10 meses», «4 años»,
+ * «7 meses». Se usa para ponerle la cuenta a cada aniversario al pintarlo.
+ */
+export function elapsedLabel(date: Date): string {
+  const total =
+    (date.getFullYear() - RELATIONSHIP_START.getFullYear()) * 12 +
+    (date.getMonth() - RELATIONSHIP_START.getMonth())
+
+  const years = Math.floor(total / 12)
+  const months = total % 12
+
+  const y = `${years} ${years === 1 ? 'año' : 'años'}`
+  const m = `${months} ${months === 1 ? 'mes' : 'meses'}`
+
+  if (years <= 0) return m
+  if (months === 0) return y
+  return `${y} y ${m}`
+}
+
 /** Dias juntos, contando hoy como dia vivido. */
 export function daysTogether(today = new Date()): number {
   return differenceInCalendarDays(startOfDay(today), startOfDay(RELATIONSHIP_START)) + 1

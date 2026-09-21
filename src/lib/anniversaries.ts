@@ -1,34 +1,27 @@
 import { ANNIVERSARY_DAY, RELATIONSHIP_START } from './config'
-import { createEvent, listEvents, patchEvent } from './gcal'
-import { daysTogether } from './dates'
+import { createEvent, deleteEvent, listEvents, patchEvent } from './gcal'
 import { buildDescription } from './tags'
 
 /**
- * Crea los dos eventos recurrentes de aniversario en el calendario conjunto:
- * el mensual (cada dia 22) y el anual (cada 22 de noviembre).
+ * Los aniversarios en el calendario conjunto: dos eventos que se repiten
+ * solos, uno cada mes y otro cada año.
  *
- * Son eventos de dia completo con aviso, para que Google notifique a los dos
- * moviles. Si ya existen no se duplican, y si el mensual quedo creado con la
- * regla antigua se corrige.
+ * Van sin numeros a proposito. Para que el nombre dijera "3 años y 10 meses"
+ * habria que crear un evento por fecha —una serie tiene un unico titulo para
+ * todas sus repeticiones—, y eso son sesenta eventos sueltos que hay que ir
+ * alargando cada pocos años. Dos eventos recurrentes que no caducan nunca
+ * salen mucho mas baratos.
  */
 
-const MONTHLY_TITLE = 'Aniversario mensual ❤️'
-const YEARLY_TITLE = 'Aniversario ❤️'
+export const TITLE = '🐣❤️'
 
-/** Titulos anteriores, para reconocer eventos ya creados y no duplicarlos. */
-const KNOWN_TITLES: Record<string, 'monthly' | 'yearly'> = {
-  [MONTHLY_TITLE]: 'monthly',
-  [YEARLY_TITLE]: 'yearly',
-  'Aniversario mensual': 'monthly',
-  Aniversario: 'yearly',
-  '💗 Un mes más juntos': 'monthly',
-  '💗 Nuestro aniversario': 'yearly',
-}
+/** Cuantas peticiones a Google a la vez, al limpiar. */
+const CONCURRENCY = 4
 
 /**
- * El mensual salta el mes del aniversario anual. Si no, el 22 de noviembre
- * caerian los dos eventos el mismo dia. Con FREQ=MONTHLY, BYMONTH actua como
- * filtro: se listan los once meses que si valen.
+ * El mensual salta el mes del aniversario anual. Si no, ese dia caerian los
+ * dos. Con FREQ=MONTHLY, BYMONTH actua como filtro: se listan los once meses
+ * que si valen.
  */
 const MONTHLY_RRULE = (() => {
   const skip = RELATIONSHIP_START.getMonth() + 1 // 1-12
@@ -38,109 +31,141 @@ const MONTHLY_RRULE = (() => {
 
 const YEARLY_RRULE = 'RRULE:FREQ=YEARLY'
 
+/** Titulos que han usado versiones anteriores de la app. */
+const LEGACY_TITLES = new Set([
+  'Aniversario mensual ❤️',
+  'Aniversario ❤️',
+  'Aniversario mensual',
+  'Aniversario',
+  '💗 Un mes más juntos',
+  '💗 Nuestro aniversario',
+])
+
 export interface AnniversaryResult {
   created: string[]
   updated: string[]
-  skipped: string[]
+  /** Restos de versiones anteriores que se han quitado. */
+  removed: number
+}
+
+export interface Progress {
+  done: number
+  total: number
 }
 
 export async function ensureAnniversaries(calendarId: string): Promise<AnniversaryResult> {
-  const existing = await findExisting(calendarId)
-  const result: AnniversaryResult = { created: [], updated: [], skipped: [] }
+  const ours = await findOurs(calendarId)
+  const result: AnniversaryResult = { created: [], updated: [], removed: 0 }
+
+  // Los buenos son los dos recurrentes con el titulo actual. Cualquier otra
+  // cosa es de una version anterior y sobra.
+  const monthly = ours.find((e) => e.summary?.trim() === TITLE && ruleOf(e)?.includes('FREQ=MONTHLY'))
+  const yearly = ours.find((e) => e.summary?.trim() === TITLE && ruleOf(e)?.includes('FREQ=YEARLY'))
+
+  const keep = new Set([monthly?.id, yearly?.id].filter(Boolean) as string[])
+  for (const e of ours) {
+    if (!keep.has(e.id)) {
+      await deleteEvent(calendarId, e.id)
+      result.removed++
+    }
+  }
 
   // --- mensual ---
-  const monthly = existing.get('monthly')
-  if (monthly) {
-    // Estaba creado con la regla vieja, que duplicaba en noviembre.
-    if (monthly.rrule !== MONTHLY_RRULE || monthly.summary !== MONTHLY_TITLE) {
-      await patchEvent(calendarId, monthly.id, {
-        summary: MONTHLY_TITLE,
-        recurrence: [MONTHLY_RRULE],
-      })
-      result.updated.push('el aniversario mensual')
-    } else {
-      result.skipped.push('el aniversario mensual')
-    }
-  } else {
-    const start = nextMonthly()
-    await createEvent(calendarId, {
-      summary: MONTHLY_TITLE,
-      description: buildDescription(`Desde el ${formatEs(RELATIONSHIP_START)}.`, ['aniversario']),
-      start: { date: isoDate(start) },
-      end: { date: isoDate(addDays(start, 1)) },
-      recurrence: [MONTHLY_RRULE],
-      reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 12 * 60 }] },
-    })
-    result.created.push('el aniversario mensual')
+  if (!monthly) {
+    await createEvent(calendarId, buildEvent(nextMonthly(), MONTHLY_RRULE, false))
+    result.created.push('el mensual')
+  } else if (ruleOf(monthly) !== MONTHLY_RRULE) {
+    // Estaba creado con la regla vieja, que duplicaba en el mes del anual.
+    await patchEvent(calendarId, monthly.id, { recurrence: [MONTHLY_RRULE] })
+    result.updated.push('el mensual')
   }
 
   // --- anual ---
-  const yearly = existing.get('yearly')
-  if (yearly) {
-    if (yearly.summary !== YEARLY_TITLE) {
-      await patchEvent(calendarId, yearly.id, { summary: YEARLY_TITLE })
-      result.updated.push('el aniversario anual')
-    } else {
-      result.skipped.push('el aniversario anual')
-    }
-  } else {
-    const start = nextYearly()
-    await createEvent(calendarId, {
-      summary: YEARLY_TITLE,
-      description: buildDescription(
-        `Juntos desde el ${formatEs(RELATIONSHIP_START)}: ${daysTogether(start)} días.`,
-        ['aniversario'],
-      ),
-      start: { date: isoDate(start) },
-      end: { date: isoDate(addDays(start, 1)) },
-      recurrence: [YEARLY_RRULE],
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'popup', minutes: 7 * 24 * 60 },
-          { method: 'popup', minutes: 24 * 60 },
-        ],
-      },
-    })
-    result.created.push('el aniversario anual')
+  if (!yearly) {
+    await createEvent(calendarId, buildEvent(nextYearly(), YEARLY_RRULE, true))
+    result.created.push('el anual')
   }
 
   return result
 }
 
-interface Found {
-  id: string
-  summary: string
-  rrule?: string
+function buildEvent(start: Date, rrule: string, yearly: boolean) {
+  return {
+    summary: TITLE,
+    description: buildDescription(`Desde el ${formatEs(RELATIONSHIP_START)}.`, ['aniversario']),
+    start: { date: isoDate(start) },
+    end: { date: isoDate(addDays(start, 1)) },
+    recurrence: [rrule],
+    reminders: {
+      useDefault: false,
+      overrides: yearly
+        ? [
+            { method: 'popup' as const, minutes: 7 * 24 * 60 },
+            { method: 'popup' as const, minutes: 24 * 60 },
+          ]
+        : [{ method: 'popup' as const, minutes: 12 * 60 }],
+    },
+  }
+}
+
+/* ---------- limpieza ---------- */
+
+/** ¿Este evento lo puso la app como aniversario? */
+function isAppAnniversary(summary?: string): boolean {
+  const title = summary?.trim() ?? ''
+  // Por el titulo y no por la etiqueta: la etiqueta `#aniversario` la puede
+  // haber puesto el usuario en un evento suyo, y ese no hay que tocarlo.
+  // `startsWith` recoge tambien los que llevaban la cuenta ("🐣❤️ 4 años").
+  return title === TITLE || title.startsWith(`${TITLE} `) || LEGACY_TITLES.has(title)
 }
 
 /**
- * Busca en el proximo año los aniversarios ya creados. Se piden las series sin
- * expandir (`singleEvents` false) para quedarse con el evento maestro, que es
- * el que hay que corregir si su regla es la antigua.
+ * Todo lo que la app haya puesto como aniversario, sin expandir las series:
+ * asi de una serie llega su evento maestro, que es el que hay que tocar.
  */
-async function findExisting(calendarId: string): Promise<Map<'monthly' | 'yearly', Found>> {
-  const from = new Date()
+async function findOurs(calendarId: string) {
   const to = new Date()
-  to.setFullYear(to.getFullYear() + 1)
-
-  const events = await listEvents(calendarId, from, to, { expandSeries: false })
-  const out = new Map<'monthly' | 'yearly', Found>()
-
-  for (const e of events) {
-    const kind = KNOWN_TITLES[e.summary?.trim() ?? '']
-    if (!kind || out.has(kind)) continue
-    out.set(kind, {
-      id: e.id,
-      summary: e.summary?.trim() ?? '',
-      rrule: e.recurrence?.find((r) => r.startsWith('RRULE:')),
-    })
-  }
-
-  return out
+  to.setFullYear(to.getFullYear() + 10)
+  const events = await listEvents(calendarId, new Date(RELATIONSHIP_START), to, {
+    expandSeries: false,
+  })
+  return events.filter((e) => isAppAnniversary(e.summary))
 }
 
-/** Proximo dia 22 del mes, hoy incluido, saltando el mes del anual. */
+/** Cuantos hay, para decirlo antes de borrarlos. */
+export async function countAnniversaries(calendarId: string): Promise<number> {
+  return (await findOurs(calendarId)).length
+}
+
+/** Borra todos los que haya puesto la app, de esta version y de las anteriores. */
+export async function removeAllAnniversaries(
+  calendarId: string,
+  onProgress?: (p: Progress) => void,
+): Promise<number> {
+  const ours = await findOurs(calendarId)
+
+  let done = 0
+  onProgress?.({ done, total: ours.length })
+
+  for (let i = 0; i < ours.length; i += CONCURRENCY) {
+    await Promise.all(
+      ours.slice(i, i + CONCURRENCY).map(async (e) => {
+        await deleteEvent(calendarId, e.id)
+        onProgress?.({ done: ++done, total: ours.length })
+      }),
+    )
+  }
+
+  return ours.length
+}
+
+/* ---------- fechas ---------- */
+
+function ruleOf(e: { recurrence?: string[] | null }): string | undefined {
+  return e.recurrence?.find((r) => r.startsWith('RRULE:'))
+}
+
+/** Proximo dia del aniversario mensual, hoy incluido, saltando el mes del anual. */
 function nextMonthly(): Date {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())

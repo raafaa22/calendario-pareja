@@ -2,15 +2,11 @@ import { OWNER_STYLES } from '../lib/config'
 import { fmt } from '../lib/dates'
 import { useOwnerLabels } from '../lib/labels'
 import type { AppEvent } from '../lib/model'
-import { getTag, guessTag } from '../lib/tags'
+import { getTag } from '../lib/tags'
 
 /**
- * Emoji del evento, por orden: el elegido a mano, el de su etiqueta, y si no
- * tiene ninguno, uno adivinado por el nombre.
- *
- * Lo tercero es lo que hace util todo esto: la mayoria de eventos no se crean
- * desde la app —el horario de trabajo, las clases que ya estaban en Google— y
- * sin adivinar se quedarian todos sin icono.
+ * Emoji del evento: manda el elegido a mano, y si no hay, el de la primera
+ * etiqueta reconocida.
  */
 export function eventIcon(ev: AppEvent): string | null {
   if (ev.emoji) return ev.emoji
@@ -18,8 +14,7 @@ export function eventIcon(ev: AppEvent): string | null {
     const tag = getTag(id)
     if (tag) return tag.icon
   }
-  const guessed = guessTag(ev.title)
-  return guessed ? (getTag(guessed)?.icon ?? null) : null
+  return null
 }
 
 /** Que se ensena en el chip compacto, ademas del nombre. */
@@ -61,14 +56,14 @@ export default function EventChip({
           e.stopPropagation()
           onClick(event)
         }}
-        title={`${event.allDay ? 'Todo el día' : fmt.time(event.start)} · ${event.title}`}
+        title={`${event.allDay ? 'Todo el día' : fmt.time(event.start)} · ${event.displayTitle}`}
         className={`tap w-full truncate rounded-[5px] border px-[2px] py-[1px] text-left text-[8px] leading-[1.5] tracking-[-0.02em] ${style.chip}`}
       >
         {parts.emoji && icon && <span className="mr-[1px]">{icon}</span>}
         {showTime && (
           <span className="font-extrabold tabular-nums">{fmt.timeCompact(event.start)} </span>
         )}
-        <span className="font-semibold">{event.title}</span>
+        <span className="font-semibold">{event.displayTitle}</span>
       </button>
     )
   }
@@ -88,7 +83,9 @@ export default function EventChip({
       </span>
 
       <span className="min-w-0 flex-1 self-center">
-        <span className="block truncate text-[15px] font-bold leading-tight">{event.title}</span>
+        <span className="block truncate text-[15px] font-bold leading-tight">
+          {event.displayTitle}
+        </span>
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
           <span className="font-semibold tabular-nums">
             {event.allDay ? 'Todo el día' : `${fmt.time(event.start)} – ${fmt.time(event.end)}`}

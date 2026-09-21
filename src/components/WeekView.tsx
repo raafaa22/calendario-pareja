@@ -67,7 +67,7 @@ export default function WeekView({ cursor, events, onOpenEvent, onSelectDay }: P
                   onClick={() => onOpenEvent(ev)}
                   className={`tap truncate rounded-lg border px-1 text-[9px] font-semibold leading-tight ${OWNER_STYLES[ev.owner].chip}`}
                 >
-                  {ev.title}
+                  {ev.displayTitle}
                 </button>
               ))}
             </div>
@@ -133,8 +133,8 @@ function DayColumn({
             key={`${ev.calendarId}:${ev.id}`}
             type="button"
             onClick={() => onOpenEvent(ev)}
-            title={`${fmt.time(ev.start)} ${ev.title}`}
-            aria-label={`${fmt.time(ev.start)} ${ev.title}`}
+            title={`${fmt.time(ev.start)} ${ev.displayTitle}`}
+            aria-label={`${fmt.time(ev.start)} ${ev.displayTitle}`}
             className={`tap absolute overflow-hidden rounded-lg border text-[9px] leading-tight ${
               narrow ? 'flex items-start justify-center pt-1' : 'px-1 pt-0.5 text-left'
             } ${OWNER_STYLES[ev.owner].chip}`}
@@ -146,7 +146,7 @@ function DayColumn({
               <>
                 <span className="block truncate font-bold">
                   {icon && <span className="mr-px">{icon}</span>}
-                  {ev.title}
+                  {ev.displayTitle}
                 </span>
                 {height > 26 && (
                   <span className="block truncate tabular-nums opacity-70">

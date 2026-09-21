@@ -5,6 +5,13 @@ export const RELATIONSHIP_START = new Date(2022, 10, 22) // 22/11/2022
 export const ANNIVERSARY_DAY = RELATIONSHIP_START.getDate()
 
 /**
+ * Como se llaman los aniversarios en Google. La cuenta de meses y años NO va
+ * aqui: la pone la app al pintarlos, porque un evento que se repite tiene un
+ * unico nombre para todas sus repeticiones. Ver `elapsedLabel` en dates.ts.
+ */
+export const ANNIVERSARY_TITLE = '🐣❤️'
+
+/**
  * Permisos que pide la app:
  * - calendar / calendar.events: leer y escribir en los calendarios.
  * - userinfo.profile / .email: el nombre y la foto para personalizar la

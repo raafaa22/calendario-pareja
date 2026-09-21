@@ -1,7 +1,15 @@
 import { useState } from 'react'
-import { ensureAnniversaries } from '../lib/anniversaries'
+import {
+  TITLE as ANNIVERSARY_TITLE,
+  countAnniversaries,
+  ensureAnniversaries,
+  removeAllAnniversaries,
+  type Progress,
+} from '../lib/anniversaries'
 import type { Profile } from '../lib/auth'
-import { RELATIONSHIP_START } from '../lib/config'
+import { OWNERS, RELATIONSHIP_START } from '../lib/config'
+import { deleteCalendar, listCalendars, type GCalCalendar } from '../lib/gcal'
+import { elapsedLabel } from '../lib/dates'
 import { ownerLabels } from '../lib/labels'
 import { DEFAULT_APP_NAME, clearEventCache, type Settings } from '../lib/storage'
 import {
@@ -32,7 +40,14 @@ const REMINDER_PRESETS = [
  * sola lista habia que bajar media pagina para llegar a lo de siempre, y el
  * boton de volver al calendario quedaba enterrado al final.
  */
-type Section = 'calendars' | 'appearance' | 'month' | 'anniversaries' | 'reminders' | 'general'
+type Section =
+  | 'calendars'
+  | 'appearance'
+  | 'month'
+  | 'anniversaries'
+  | 'reminders'
+  | 'cleanup'
+  | 'general'
 
 const SECTION_TITLES: Record<Section, string> = {
   calendars: 'Los calendarios',
@@ -40,6 +55,7 @@ const SECTION_TITLES: Record<Section, string> = {
   month: 'La vista de mes',
   anniversaries: 'Aniversarios',
   reminders: 'Avisos por defecto',
+  cleanup: 'Limpieza',
   general: 'Nombre y datos',
 }
 
@@ -110,6 +126,7 @@ export default function SettingsView({
           <Anniversaries settings={settings} onReload={onReload} />
         )}
         {section === 'reminders' && <Reminders settings={settings} onChange={onChange} />}
+        {section === 'cleanup' && <Cleanup settings={settings} onReload={onReload} />}
         {section === 'general' && (
           <General
             settings={settings}
@@ -194,7 +211,7 @@ function Menu({
           onClick={() => onOpen('month')}
         />
         <Row
-          icon="❤️"
+          icon="🐣"
           title="Aniversarios"
           value={`Cada día ${RELATIONSHIP_START.getDate()} y cada año`}
           onClick={() => onOpen('anniversaries')}
@@ -204,6 +221,12 @@ function Menu({
           title="Avisos por defecto"
           value={reminderSummary}
           onClick={() => onOpen('reminders')}
+        />
+        <Row
+          icon="🧹"
+          title="Limpieza"
+          value="Borrar aniversarios y calendarios sueltos"
+          onClick={() => onOpen('cleanup')}
         />
         <Row
           icon="⚙️"
@@ -494,11 +517,12 @@ function Anniversaries({ settings, onReload }: { settings: Settings; onReload: (
     setBusy(true)
     setMsg(null)
     try {
-      const { created, updated, skipped } = await ensureAnniversaries(oursId)
+      const { created, updated, removed } = await ensureAnniversaries(oursId)
       const parts: string[] = []
-      if (created.length) parts.push(`Añadido ${created.join(' y ')}.`)
+      if (created.length) parts.push(`Puesto ${created.join(' y ')}.`)
       if (updated.length) parts.push(`Corregido ${updated.join(' y ')}.`)
-      if (skipped.length) parts.push(`Ya estaba bien ${skipped.join(' y ')}.`)
+      if (removed) parts.push(`Quitados ${removed} de versiones anteriores.`)
+      if (!parts.length) parts.push('Ya estaban los dos puestos.')
       setMsg(parts.join(' '))
       clearEventCache()
       onReload()
@@ -509,25 +533,53 @@ function Anniversaries({ settings, onReload }: { settings: Settings; onReload: (
     }
   }
 
+  const day = RELATIONSHIP_START.getDate()
+  const month = RELATIONSHIP_START.toLocaleDateString('es-ES', { month: 'long' })
+
   return (
     <Page>
       <Card
-        hint={`Crea en «${ownerLabels(settings).ours}» dos eventos recurrentes: uno cada día ${RELATIONSHIP_START.getDate()} del mes y otro cada ${RELATIONSHIP_START.getDate()} de noviembre. El mensual se salta noviembre para que ese día no salgan los dos.`}
+        hint={`Pone en «${ownerLabels(settings).ours}» dos eventos que se repiten solos: uno cada día ${day} del mes y otro cada ${day} de ${month}. El mensual se salta ${month} para que ese día no salgan los dos.`}
       >
+        {/* Como se ve en la app, con la cuenta puesta al vuelo. */}
+        <div className="flex flex-col gap-1.5">
+          {[0, 1].map((i) => {
+            const d = new Date(
+              RELATIONSHIP_START.getFullYear() + 4,
+              RELATIONSHIP_START.getMonth() + (i === 0 ? 0 : 2),
+              RELATIONSHIP_START.getDate(),
+            )
+            return (
+              <div
+                key={i}
+                className="chip-ours truncate rounded-xl border px-2.5 py-1.5 text-center text-sm font-bold"
+              >
+                {ANNIVERSARY_TITLE} {elapsedLabel(d)}
+              </div>
+            )
+          })}
+        </div>
+
         <button
           type="button"
           onClick={handle}
           disabled={!oursId || busy}
-          className="tap w-full rounded-2xl border border-accent-line bg-accent-soft py-3 text-sm font-bold text-accent disabled:opacity-40"
+          className="tap mt-3 w-full rounded-2xl border border-accent-line bg-accent-soft py-3 text-sm font-bold text-accent disabled:opacity-40"
         >
-          {busy ? 'Creando…' : 'Crear los aniversarios ❤️'}
+          {busy ? 'Poniéndolos…' : 'Poner los aniversarios'}
         </button>
+
         {!oursId && (
-          <p className="mt-2 text-[11px] text-warn">
-            Asigna primero el calendario de los dos.
-          </p>
+          <p className="mt-2 text-[11px] text-warn">Asigna primero el calendario de los dos.</p>
         )}
         {msg && <p className="mt-2 text-[11px] leading-snug text-muted">{msg}</p>}
+        <p className="mt-2 text-[11px] leading-snug text-subtle">
+          La cuenta de meses y años <strong>no se guarda</strong> en el evento:
+          la pone la app al pintarlo, calculándola por la fecha de cada
+          repetición. Por eso en la app de Google los verás solo como{' '}
+          {ANNIVERSARY_TITLE}. Así son dos eventos que no caducan nunca, en vez
+          de uno por fecha que habría que ir alargando.
+        </p>
       </Card>
     </Page>
   )
@@ -689,5 +741,246 @@ function ColorRow({
         </button>
       )}
     </div>
+  )
+}
+
+/* ---------- limpieza ---------- */
+
+/**
+ * Lo destructivo, junto y apartado. Son dos cosas distintas y de distinta
+ * gravedad: borrar los aniversarios se puede deshacer volviendolos a poner;
+ * borrar un calendario de Google se lleva sus eventos y no tiene vuelta.
+ */
+function Cleanup({ settings, onReload }: { settings: Settings; onReload: () => void }) {
+  return (
+    <Page>
+      <AnniversaryCleanup settings={settings} onReload={onReload} />
+      <CalendarCleanup settings={settings} />
+    </Page>
+  )
+}
+
+function AnniversaryCleanup({
+  settings,
+  onReload,
+}: {
+  settings: Settings
+  onReload: () => void
+}) {
+  const [count, setCount] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<Progress | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const oursId = settings.calendars.ours?.id
+
+  async function count_() {
+    if (!oursId) return
+    setBusy(true)
+    setMsg(null)
+    try {
+      setCount(await countAnniversaries(oursId))
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'No se han podido contar')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    if (!oursId) return
+    setBusy(true)
+    setMsg(null)
+    try {
+      const n = await removeAllAnniversaries(oursId, setProgress)
+      setMsg(`Borrados ${n}.`)
+      setCount(0)
+      clearEventCache()
+      onReload()
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'No se han podido borrar')
+    } finally {
+      setBusy(false)
+      setProgress(null)
+    }
+  }
+
+  return (
+    <Card
+      title="Los aniversarios"
+      hint="Borra los que haya puesto la app, tanto los de ahora como los de versiones anteriores. Va por el nombre del evento, así que un evento tuyo etiquetado como aniversario no se toca. Se pueden volver a poner cuando quieras."
+    >
+      {!oursId ? (
+        <p className="text-[11px] text-warn">Asigna primero el calendario de los dos.</p>
+      ) : count === null ? (
+        <button
+          type="button"
+          onClick={count_}
+          disabled={busy}
+          className="tap w-full rounded-2xl border border-line py-2.5 text-sm font-semibold text-muted disabled:opacity-40"
+        >
+          {busy ? 'Mirando…' : 'Ver cuántos hay'}
+        </button>
+      ) : count === 0 ? (
+        <p className="text-sm font-semibold text-muted">No hay ninguno puesto por la app.</p>
+      ) : (
+        <>
+          <p className="text-sm font-semibold">
+            Hay {count} {count === 1 ? 'aniversario' : 'aniversarios'} puestos por la app.
+          </p>
+          <button
+            type="button"
+            onClick={remove}
+            disabled={busy}
+            className="tap mt-2.5 w-full rounded-2xl bg-danger-strong py-2.5 text-sm font-bold text-danger-strong-fg disabled:opacity-50"
+          >
+            {busy
+              ? progress
+                ? `Borrando… ${progress.done} de ${progress.total}`
+                : 'Borrando…'
+              : `Borrar los ${count}`}
+          </button>
+        </>
+      )}
+      {msg && <p className="mt-2 text-[11px] leading-snug text-muted">{msg}</p>}
+    </Card>
+  )
+}
+
+function CalendarCleanup({ settings }: { settings: Settings }) {
+  const [calendars, setCalendars] = useState<GCalCalendar[] | null>(null)
+  const [chosen, setChosen] = useState<Set<string>>(new Set())
+  const [armed, setArmed] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const inUse = new Set(OWNERS.map((o) => settings.calendars[o]?.id).filter(Boolean) as string[])
+
+  /**
+   * Solo se ofrecen los que son tuyos y no estan en uso. El principal no se
+   * puede borrar en Google, y los de otra persona no son tuyos para borrarlos.
+   */
+  const spare = (calendars ?? []).filter(
+    (c) => c.accessRole === 'owner' && !c.primary && !inUse.has(c.id),
+  )
+
+  async function load() {
+    setBusy(true)
+    setMsg(null)
+    try {
+      setCalendars(await listCalendars())
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'No se han podido cargar')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    setBusy(true)
+    setMsg(null)
+    let ok = 0
+    try {
+      for (const id of chosen) {
+        await deleteCalendar(id)
+        ok++
+      }
+      setMsg(`Borrados ${ok}.`)
+      setChosen(new Set())
+      setArmed(false)
+      await load()
+    } catch (e) {
+      setMsg(
+        `${ok > 0 ? `Borrados ${ok}, pero luego falló: ` : ''}${
+          e instanceof Error ? e.message : 'error'
+        }`,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggle = (id: string) =>
+    setChosen((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  return (
+    <Card
+      title="Calendarios sueltos"
+      hint="Los que son tuyos y la app no está usando: restos de pruebas o de configuraciones anteriores. Tu calendario principal y los tres en uso no salen aquí."
+    >
+      {calendars === null ? (
+        <button
+          type="button"
+          onClick={load}
+          disabled={busy}
+          className="tap w-full rounded-2xl border border-line py-2.5 text-sm font-semibold text-muted disabled:opacity-40"
+        >
+          {busy ? 'Cargando…' : 'Ver los que sobran'}
+        </button>
+      ) : spare.length === 0 ? (
+        <p className="text-sm font-semibold text-muted">No sobra ninguno. Todo limpio.</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1.5">
+            {spare.map((c) => (
+              <label
+                key={c.id}
+                className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-elevated px-3 py-2.5"
+              >
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{c.summary}</span>
+                <input
+                  type="checkbox"
+                  checked={chosen.has(c.id)}
+                  onChange={() => toggle(c.id)}
+                  className="h-5 w-5 shrink-0 accent-accent"
+                />
+              </label>
+            ))}
+          </div>
+
+          {chosen.size > 0 &&
+            (armed ? (
+              <div className="mt-2.5 rounded-2xl border border-danger-line bg-danger-soft p-3">
+                <p className="text-[11px] font-semibold leading-snug text-danger">
+                  {chosen.size === 1
+                    ? 'Se borrará 1 calendario de tu cuenta de Google con todos sus eventos, para ti y para quien lo tenga compartido.'
+                    : `Se borrarán ${chosen.size} calendarios de tu cuenta de Google con todos sus eventos, para ti y para quien los tenga compartidos.`}{' '}
+                  No se puede deshacer.
+                </p>
+                <div className="mt-2.5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setArmed(false)}
+                    className="tap flex-1 rounded-xl border border-line bg-surface py-2 text-xs font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={remove}
+                    disabled={busy}
+                    className="tap flex-1 rounded-xl bg-danger-strong py-2 text-xs font-bold text-danger-strong-fg disabled:opacity-50"
+                  >
+                    {busy ? 'Borrando…' : chosen.size === 1 ? 'Sí, borrarlo' : 'Sí, borrarlos'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setArmed(true)}
+                className="tap mt-2.5 w-full rounded-2xl border border-danger-line py-2.5 text-sm font-semibold text-danger"
+              >
+                {chosen.size === 1 ? 'Borrar el marcado…' : `Borrar los ${chosen.size} marcados…`}
+              </button>
+            ))}
+        </>
+      )}
+      {msg && <p className="mt-2 text-[11px] leading-snug text-muted">{msg}</p>}
+    </Card>
   )
 }

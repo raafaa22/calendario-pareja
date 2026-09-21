@@ -95,60 +95,6 @@ export function buildDescription(notes: string, tags: string[], emoji?: string):
   return clean ? `${clean}\n\n${marks}` : marks
 }
 
-/**
- * Palabras que delatan de que va un evento. Sirve para poner icono a los
- * eventos que no se han creado desde la app —el horario de trabajo, las clases
- * que ya estaban en Google— que son la mayoria y no tienen ninguna etiqueta.
- *
- * El orden importa: gana la primera que coincida, asi que van antes las mas
- * especificas ("clase de pilates" es gym, no clase).
- */
-const KEYWORDS: [string, string[]][] = [
-  ['gym', ['gym', 'gimnasio', 'entreno', 'entrenamiento', 'pesas', 'crossfit', 'pilates', 'yoga', 'correr', 'running', 'padel', 'futbol', 'natacion', 'piscina']],
-  ['practicas', ['practicas', 'practica', 'hospital', 'prácticum', 'practicum']],
-  ['clase', ['clase', 'clases', 'universidad', 'uni', 'facultad', 'examen', 'examenes', 'tutoria', 'apuntes', 'estudiar', 'curso']],
-  ['trabajo', ['trabajo', 'curro', 'oficina', 'turno', 'reunion', 'meeting', 'jornada', 'guardia']],
-  ['fisio', ['fisio', 'fisioterapia', 'rehabilitacion', 'rehab']],
-  ['medico', ['medico', 'doctor', 'doctora', 'consulta', 'analisis', 'analitica', 'dentista', 'revision', 'vacuna', 'ambulatorio', 'centro de salud']],
-  ['barbero', ['barbero', 'barberia', 'peluqueria', 'peluquero', 'peluquera', 'corte de pelo', 'cortarme el pelo']],
-  ['cena', ['cena', 'cenar', 'cenamos']],
-  ['comida', ['comida', 'comer', 'comemos', 'almuerzo', 'almorzar', 'desayuno', 'desayunar', 'brunch']],
-  ['viaje', ['viaje', 'vuelo', 'avion', 'tren', 'hotel', 'escapada', 'aeropuerto', 'maletas']],
-  ['cumple', ['cumple', 'cumpleanos', 'cumpleaños']],
-  ['aniversario', ['aniversario']],
-  ['familia', ['familia', 'padres', 'suegros', 'abuela', 'abuelo', 'primos', 'tios']],
-  ['amigos', ['amigos', 'amigas', 'canas', 'birras', 'cervezas', 'fiesta', 'quedada']],
-  ['cita', ['cita', 'cine', 'teatro', 'concierto', 'museo', 'planazo']],
-  ['recado', ['recado', 'compra', 'supermercado', 'banco', 'papeleo', 'gestoria', 'correos', 'itv', 'taller']],
-]
-
-/** Quita acentos y pasa a minusculas, para que "Médico" case con "medico". */
-function normalize(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
-/**
- * Adivina la etiqueta de un evento por su nombre. Devuelve null si no lo tiene
- * claro: es mejor no poner icono que poner uno que despiste.
- */
-export function guessTag(title: string): string | null {
-  const text = normalize(title)
-  if (!text) return null
-
-  for (const [tag, words] of KEYWORDS) {
-    for (const word of words) {
-      // Palabra entera: "uni" no debe saltar dentro de "reunion".
-      if (new RegExp(`(^|[^\\p{L}])${normalize(word)}($|[^\\p{L}])`, 'u').test(text)) {
-        return tag
-      }
-    }
-  }
-  return null
-}
-
 /** Emojis que se ofrecen como atajo en el formulario. */
 export const EMOJI_SUGGESTIONS = [
   '❤️', '🎉', '🎂', '🍕', '🍽️', '☕', '🍻', '🎬', '🎵', '🎮',

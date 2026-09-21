@@ -155,9 +155,46 @@ correo), el enlace **«No me sale en la lista…»** lo añade pegando su ID.
 
 ### 4. Aniversarios
 
-En **Ajustes → Aniversarios**, el botón crea en «Nosotros» dos eventos que se
-repiten solos: uno cada día 22 del mes y otro cada 22 de noviembre, los dos con
-aviso. Si los pulsas dos veces no se duplican.
+En **Ajustes → Aniversarios**, el botón pone en el calendario conjunto dos
+eventos que se repiten solos: uno cada día 22 del mes y otro cada 22 de
+noviembre. El mensual salta noviembre, así ese día no salen los dos.
+
+En Google se llaman **🐣❤️** a secas. La cuenta de meses y años **no se guarda
+en el evento**: la pone la app al pintarlo, calculada por la fecha de cada
+repetición.
+
+| | |
+| --- | --- |
+| Guardado en Google | `🐣❤️` · `🐣❤️` · `🐣❤️` |
+| Como se ve en la app | `🐣❤️ 3 años y 10 meses` · `🐣❤️ 3 años y 11 meses` · `🐣❤️ 4 años` |
+
+Es la única forma de que un evento recurrente lleve la cuenta: una serie tiene
+un único nombre para todas sus repeticiones. La alternativa sería un evento
+suelto por fecha, y eso hay que ir alargándolo cada pocos años; estos no caducan
+nunca.
+
+Por eso `AppEvent` tiene dos títulos: `title` es el que está en Google y el que
+edita y guarda el formulario, y `displayTitle` el que pintan las vistas. Si se
+usara el mismo, al abrir un aniversario y darle a guardar se grabaría el número
+dentro del evento y se rompería para todas las demás repeticiones.
+
+Pulsarlo otra vez no duplica nada: reconoce lo que ya está, corrige la regla si
+quedó de una versión anterior, y borra los restos (series antiguas, o los
+eventos sueltos con la cuenta que probó una versión intermedia).
+
+### 5. Limpieza
+
+**Ajustes → Limpieza** tiene las dos cosas destructivas, juntas y apartadas:
+
+- **Los aniversarios** — borra los que haya puesto la app, de esta versión y de
+  las anteriores. Va **por el nombre del evento**, así que un evento tuyo
+  etiquetado como aniversario no se toca. Se pueden volver a poner cuando
+  quieras.
+- **Calendarios sueltos** — los que son tuyos y la app no usa: restos de
+  pruebas o de configuraciones anteriores. Tu calendario principal, los tres en
+  uso y los que no son tuyos no aparecen. Va con casillas y una confirmación
+  que dice exactamente qué se pierde, porque borrar un calendario de Google se
+  lleva sus eventos para siempre y para todos los que lo tengan compartido.
 
 ## Desplegar gratis
 

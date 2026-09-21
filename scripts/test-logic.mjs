@@ -234,6 +234,18 @@ eq('interfaz a mano manda', m.theme.resolveChrome({ ...custom, chrome: '#00ff00'
 eq('la interfaz sigue a un nosotros elegido a mano',
    m.theme.hueDistance(m.theme.resolveChrome({ ...custom, ours: '#ff0000' }), '#ff0000') >= 175, true)
 
+// --- la cuenta de los aniversarios ---
+// No se guarda en el evento: la pone la app al pintarlo, calculada por la
+// fecha de cada repeticion. Empezasteis el 22/11/2022.
+const cuando = (y, mo) => new Date(y, mo - 1, 22)
+eq('el primer mes', m.dates.elapsedLabel(cuando(2022, 12)), '1 mes')
+eq('varios meses', m.dates.elapsedLabel(cuando(2023, 6)), '7 meses')
+eq('el primer año justo', m.dates.elapsedLabel(cuando(2023, 11)), '1 año')
+eq('un mes despues de un año', m.dates.elapsedLabel(cuando(2023, 12)), '1 año y 1 mes')
+eq('años y meses', m.dates.elapsedLabel(cuando(2026, 9)), '3 años y 10 meses')
+eq('varios años justos', m.dates.elapsedLabel(cuando(2026, 11)), '4 años')
+eq('el mismo dia que empezasteis', m.dates.elapsedLabel(cuando(2022, 11)), '0 meses')
+
 // --- hora compacta de la vista mes ---
 const at = (h, mi) => { const d = new Date(2026, 8, 21); d.setHours(h, mi, 0, 0); return d }
 eq('en punto sin minutos', m.dates.fmt.timeCompact(at(9, 0)), '9')

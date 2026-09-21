@@ -1,5 +1,6 @@
 import type { GCalEvent } from './gcal'
-import type { Owner } from './config'
+import { ANNIVERSARY_TITLE, type Owner } from './config'
+import { elapsedLabel } from './dates'
 import { parseDescription } from './tags'
 import { parseRecurrence, type RecurrenceSpec } from './recurrence'
 
@@ -12,7 +13,13 @@ export interface AppEvent {
   id: string
   calendarId: string
   owner: Owner
+  /** El titulo tal cual esta en Google. Es el que se edita y se guarda. */
   title: string
+  /**
+   * El titulo tal como se ensena. Solo cambia en los aniversarios, que llevan
+   * la cuenta de meses y años puesta aqui en vez de guardada en el evento.
+   */
+  displayTitle: string
   notes: string
   tags: string[]
   /** Emoji elegido a mano. Manda sobre el icono de la etiqueta. */
@@ -39,16 +46,23 @@ export function toAppEvent(
   const allDay = Boolean(raw.start.date)
   const { notes, tags, emoji } = parseDescription(raw.description)
 
+  const title = raw.summary?.trim() || '(sin título)'
+  const start = parseGCalDate(raw.start, false)
+
   return {
     id: raw.id,
     calendarId,
     owner,
-    title: raw.summary?.trim() || '(sin título)',
+    title,
+    // La cuenta se calcula por la fecha de ESTA repeticion, que es justo lo
+    // que un evento recurrente no puede guardar en su nombre.
+    displayTitle:
+      title === ANNIVERSARY_TITLE ? `${title} ${elapsedLabel(start)}` : title,
     notes,
     tags,
     emoji,
     location: raw.location,
-    start: parseGCalDate(raw.start, false),
+    start,
     end: parseGCalDate(raw.end, allDay),
     allDay,
     seriesId: raw.recurringEventId,
