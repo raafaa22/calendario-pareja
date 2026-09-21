@@ -17,24 +17,38 @@ export function eventIcon(ev: AppEvent): string | null {
   return null
 }
 
+/** Que se ensena en el chip compacto, ademas del nombre. */
+export interface CompactParts {
+  time: boolean
+  emoji: boolean
+}
+
+const DEFAULT_PARTS: CompactParts = { time: true, emoji: false }
+
 interface Props {
   event: AppEvent
   onClick: (ev: AppEvent) => void
   /** `compact` va dentro de las celdas del mes; `full` en listas. */
   variant?: 'compact' | 'full'
+  /** Solo para `compact`. */
+  parts?: CompactParts
 }
 
-export default function EventChip({ event, onClick, variant = 'compact' }: Props) {
+export default function EventChip({
+  event,
+  onClick,
+  variant = 'compact',
+  parts = DEFAULT_PARTS,
+}: Props) {
   const style = OWNER_STYLES[event.owner]
   const labels = useOwnerLabels()
   const icon = eventIcon(event)
 
-  // Celda del mes: hora y nombre, y nada mas. Una celda mide unos 48px, asi
-  // que cada pixel cuenta: la hora va en formato minimo ("9", "9:30") y no hay
-  // ni barra de color ni emoji, porque el fondo del chip ya dice de quien es y
-  // con ellos no cabria el nombre. El emoji sale en la semana, en la agenda y
-  // en el detalle del dia.
+  // Celda del mes: unos 42px utiles, o sea unos 10 caracteres. Que se ensena
+  // ademas del nombre lo decide el usuario en los ajustes, porque la hora y el
+  // emoji gastan 2-3 caracteres cada uno y el nombre es lo que se recorta.
   if (variant === 'compact') {
+    const showTime = parts.time && !event.allDay
     return (
       <button
         type="button"
@@ -45,7 +59,8 @@ export default function EventChip({ event, onClick, variant = 'compact' }: Props
         title={`${event.allDay ? 'Todo el día' : fmt.time(event.start)} · ${event.title}`}
         className={`tap w-full truncate rounded-[5px] border px-[2px] py-[1px] text-left text-[8px] leading-[1.5] tracking-[-0.02em] ${style.chip}`}
       >
-        {!event.allDay && (
+        {parts.emoji && icon && <span className="mr-[1px]">{icon}</span>}
+        {showTime && (
           <span className="font-extrabold tabular-nums">{fmt.timeCompact(event.start)} </span>
         )}
         <span className="font-semibold">{event.title}</span>

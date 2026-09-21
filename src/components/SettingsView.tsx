@@ -293,6 +293,53 @@ export default function SettingsView({
         </section>
 
         <section className="mt-4 rounded-3xl border border-line bg-surface p-3.5 shadow-card">
+          <h2 className="text-sm font-extrabold">La vista de mes</h2>
+          <p className="mt-1 text-[11px] leading-snug text-subtle">
+            Cada día del mes es una celda de unos 48 px, así que hay sitio para
+            unas 10 letras. La hora y el emoji gastan 2 o 3 cada uno, y lo que
+            sobra es para el nombre.
+          </p>
+
+          <div className="mt-2.5 flex flex-col gap-2">
+            {(
+              [
+                ['monthShowTime', 'Mostrar la hora'],
+                ['monthShowEmoji', 'Mostrar el emoji'],
+              ] as const
+            ).map(([key, label]) => (
+              <label
+                key={key}
+                className="flex items-center justify-between rounded-2xl border border-line bg-elevated px-3 py-2.5"
+              >
+                <span className="text-sm font-semibold">{label}</span>
+                <input
+                  type="checkbox"
+                  checked={settings[key]}
+                  onChange={(e) => onChange({ [key]: e.target.checked })}
+                  className="h-5 w-5 accent-accent"
+                />
+              </label>
+            ))}
+          </div>
+
+          {/* Vista previa con un nombre largo, que es donde se nota el recorte. */}
+          <div className="mt-2.5 flex items-center gap-2">
+            <span className="shrink-0 text-[11px] font-medium text-muted">Así se ve:</span>
+            <span className="w-[46px] shrink-0 truncate rounded-[5px] border px-[2px] py-[1px] text-left text-[8px] font-semibold leading-[1.5] tracking-[-0.02em] chip-ours">
+              {settings.monthShowEmoji && <span className="mr-[1px]">🍽️</span>}
+              {settings.monthShowTime && <span className="font-extrabold tabular-nums">21 </span>}
+              Cena con Ana
+            </span>
+          </div>
+
+          {settings.monthShowTime && settings.monthShowEmoji && (
+            <p className="mt-2 text-[11px] leading-snug text-warn">
+              Con las dos cosas puestas casi no queda sitio para el nombre.
+            </p>
+          )}
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-line bg-surface p-3.5 shadow-card">
           <h2 className="text-sm font-extrabold">Aniversarios</h2>
           <p className="mt-1 text-[11px] leading-snug text-subtle">
             Crea en «Nosotros» dos eventos recurrentes: uno cada día{' '}

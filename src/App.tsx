@@ -274,6 +274,7 @@ export default function App() {
             selected={selected}
             onSelectDay={setSelected}
             onOpenEvent={openEvent}
+            chipParts={{ time: settings.monthShowTime, emoji: settings.monthShowEmoji }}
           />
         )}
         {view === 'week' && (

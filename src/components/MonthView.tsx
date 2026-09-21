@@ -1,7 +1,7 @@
 import { isSameDay, isSameMonth, isToday } from 'date-fns'
 import { daysBetween, fmt, monthGridRange } from '../lib/dates'
 import { byStart, occursOn, type AppEvent } from '../lib/model'
-import EventChip from './EventChip'
+import EventChip, { type CompactParts } from './EventChip'
 
 /**
  * Eventos con nombre que caben en una celda. A partir de ahi se resume con
@@ -15,9 +15,18 @@ interface Props {
   selected: Date
   onSelectDay: (d: Date) => void
   onOpenEvent: (ev: AppEvent) => void
+  /** Que se ensena en cada evento de la rejilla, ademas del nombre. */
+  chipParts: CompactParts
 }
 
-export default function MonthView({ cursor, events, selected, onSelectDay, onOpenEvent }: Props) {
+export default function MonthView({
+  cursor,
+  events,
+  selected,
+  onSelectDay,
+  onOpenEvent,
+  chipParts,
+}: Props) {
   const { from, to } = monthGridRange(cursor)
   const days = daysBetween(from, to)
   const dayOfSelected = events.filter((e) => occursOn(e, selected)).sort(byStart)
@@ -74,7 +83,12 @@ export default function MonthView({ cursor, events, selected, onSelectDay, onOpe
 
               <div className="flex min-w-0 flex-col gap-[2px]">
                 {shown.map((ev) => (
-                  <EventChip key={`${ev.calendarId}:${ev.id}`} event={ev} onClick={onOpenEvent} />
+                  <EventChip
+                    key={`${ev.calendarId}:${ev.id}`}
+                    event={ev}
+                    onClick={onOpenEvent}
+                    parts={chipParts}
+                  />
                 ))}
                 {hidden > 0 && (
                   <span className="pl-1 text-[8.5px] font-bold text-subtle">+{hidden} más</span>

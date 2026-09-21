@@ -86,14 +86,18 @@
 }
 
 /* ---------- Acentos ---------- */
+/* El azul hace de red de seguridad tambien aqui: sin `data-accent` puesto, la
+   interfaz se queda sin color de acento. */
 :root[data-accent='azul'][data-theme='dark'],
-:root[data-accent='azul']:not([data-theme='light']) {
+:root[data-accent='azul']:not([data-theme='light']),
+:root:not([data-accent]):not([data-theme='light']) {
   --c-accent: #7dd3fc;
   --c-accent-fg: #062a3a;
   --c-accent-soft: rgb(125 211 252 / 0.22);
   --c-accent-line: rgb(125 211 252 / 0.45);
 }
-:root[data-accent='azul'][data-theme='light'] {
+:root[data-accent='azul'][data-theme='light'],
+:root:not([data-accent])[data-theme='light'] {
   --c-accent: #0284c7;
   --c-accent-fg: #ffffff;
   --c-accent-soft: rgb(2 132 199 / 0.11);
@@ -179,9 +183,15 @@
  * menos de 60 grados del color de la interfaz.
  */
 
-/* --- Tema azul: rosa + lima = ambar --- */
+/*
+ * --- Tema azul: rosa + lima = ambar ---
+ * Hace tambien de red de seguridad: se aplica cuando no hay `data-accent`
+ * puesto —antes de que corra el JS, o si algo falla al aplicarlo— para que los
+ * eventos nunca se queden sin color.
+ */
 :root[data-accent='azul'][data-theme='dark'],
-:root[data-accent='azul']:not([data-theme='light']) {
+:root[data-accent='azul']:not([data-theme='light']),
+:root:not([data-accent]):not([data-theme='light']) {
   --p1-bg: rgb(244 114 182 / 0.2);
   --p1-fg: #fde0ef;
   --p1-line: rgb(244 114 182 / 0.5);
@@ -197,7 +207,8 @@
   --p3-line: rgb(251 191 36 / 0.5);
   --p3-dot: #fbbf24;
 }
-:root[data-accent='azul'][data-theme='light'] {
+:root[data-accent='azul'][data-theme='light'],
+:root:not([data-accent])[data-theme='light'] {
   --p1-bg: #fce7f3;
   --p1-fg: #9d174d;
   --p1-line: #f9a8d4;

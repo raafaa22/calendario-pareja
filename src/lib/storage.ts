@@ -33,6 +33,14 @@ export interface Settings {
   defaultReminders: number[]
   /** Duracion minima de un hueco para que se considere aprovechable. */
   minFreeSlotMinutes: number
+  /**
+   * Que se ensena en cada evento de la vista mes. La celda mide unos 48px, asi
+   * que hay sitio para unos 10 caracteres: la hora gasta 2-3 y el emoji otros
+   * 2-3, y lo que sobra es para el nombre. Con los dos puestos el nombre se
+   * recorta bastante, de ahi que se pueda elegir.
+   */
+  monthShowTime: boolean
+  monthShowEmoji: boolean
   theme: Theme
   accent: Accent
   /** Solo se usan con el tema «A mi gusto». */
@@ -50,6 +58,8 @@ export const DEFAULT_SETTINGS: Settings = {
   visible: { mine: true, hers: true, ours: true },
   defaultReminders: [30],
   minFreeSlotMinutes: 60,
+  monthShowTime: true,
+  monthShowEmoji: false,
   theme: 'system',
   accent: 'azul',
   customColors: DEFAULT_CUSTOM_COLORS,

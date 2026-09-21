@@ -261,11 +261,21 @@ casos dejarían de distinguirse.
 
 ### Decisiones que conviene conocer
 
-- **En la vista de mes el evento sale con la hora y el nombre, sin emoji ni
-  barra de color.** Una celda mide unos 48 px en un móvil, así que cada píxel
-  cuenta: la hora va en formato mínimo («9», «9:30») y el fondo del chip ya dice
-  de quién es. El emoji sí aparece en la semana, en la agenda y en el detalle
-  del día.
+- **En la vista de mes cabe poco, y se elige qué cabe.** Una celda mide unos
+  48 px en un móvil: descontando borde y relleno quedan ~42 px, que a 8 px de
+  letra son unas 10 letras. La hora gasta 2 o 3 y el emoji otros 2 o 3, así que
+  en **Ajustes → La vista de mes** se activa o desactiva cada uno, con una vista
+  previa al lado:
+
+  | Ajuste | Cómo queda |
+  | --- | --- |
+  | Hora (por defecto) | `8 Clases`, `9 Trabajo` |
+  | Emoji | `📚 Clas…` |
+  | Los dos | `📚 8 Cl…` |
+
+  La hora va en formato mínimo («9», «9:30»), y ni el emoji ni una barra de
+  color hacen falta para saber de quién es: el fondo del chip ya lo dice. En la
+  semana, en la agenda y en el detalle del día sí sale siempre el emoji.
 - **Los colores** salen todos de fichas semánticas en `src/index.css`, que
   cambian según los atributos `data-theme`, `data-accent` y `data-swap` del
   `<html>`. Los componentes no llevan ni un color a mano: por eso cambiar de
