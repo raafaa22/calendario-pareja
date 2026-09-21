@@ -90,6 +90,21 @@ export async function listCalendars(): Promise<GCalCalendar[]> {
   return res.items ?? []
 }
 
+/**
+ * Anade a la lista del usuario un calendario al que ya tiene acceso, sabiendo
+ * su ID. Es lo que resuelve el caso de "me lo ha compartido pero no me sale":
+ * compartir da permiso, pero Google no siempre lo mete en la lista del otro
+ * hasta que acepta el correo de invitacion.
+ *
+ * Falla con 404 si todavia no tiene permiso sobre ese calendario.
+ */
+export async function addCalendarToList(calendarId: string): Promise<GCalCalendar> {
+  return api<GCalCalendar>('/users/me/calendarList', {
+    method: 'POST',
+    body: JSON.stringify({ id: calendarId }),
+  })
+}
+
 export async function createCalendar(summary: string): Promise<GCalCalendar> {
   return api<GCalCalendar>('/calendars', {
     method: 'POST',

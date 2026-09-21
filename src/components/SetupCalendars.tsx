@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { OWNERS, OWNER_STYLES, type Owner } from '../lib/config'
 import {
+  addCalendarToList,
   createCalendar,
   deleteCalendar,
+  GCalError,
   listCalendars,
   shareCalendar,
   type GCalCalendar,
@@ -43,6 +45,8 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
   const [shareEmail, setShareEmail] = useState('')
   const [shareRole, setShareRole] = useState<'reader' | 'writer'>('writer')
   const [msg, setMsg] = useState<string | null>(null)
+  const [byIdOwner, setByIdOwner] = useState<Owner | null>(null)
+  const [byIdValue, setByIdValue] = useState('')
 
   const refresh = async () => {
     setLoading(true)
@@ -114,6 +118,37 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
       setShareEmail('')
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'No se ha podido compartir')
+    } finally {
+      setBusyOwner(null)
+    }
+  }
+
+  /**
+   * Anade un calendario por su ID. Es la salida para el caso de "me lo han
+   * compartido pero no me sale en la lista": compartir da permiso, pero Google
+   * no siempre lo mete en la lista del otro hasta que acepta la invitacion.
+   */
+  async function handleAddById(owner: Owner) {
+    const id = byIdValue.trim()
+    if (!id) return
+
+    setBusyOwner(owner)
+    setMsg(null)
+    try {
+      const cal = await addCalendarToList(id)
+      setCalendars((prev) => [...prev.filter((c) => c.id !== cal.id), cal])
+      assign(owner, cal)
+      setByIdOwner(null)
+      setByIdValue('')
+      setMsg(`«${cal.summary}» añadido.`)
+    } catch (e) {
+      if (e instanceof GCalError && (e.status === 404 || e.status === 403)) {
+        setMsg(
+          'Ese calendario no está compartido contigo, o el ID no es correcto. Pídele que lo comparta con tu correo primero.',
+        )
+      } else {
+        setMsg(e instanceof Error ? e.message : 'No se ha podido añadir')
+      }
     } finally {
       setBusyOwner(null)
     }
@@ -258,10 +293,48 @@ export default function SetupCalendars({ settings, onChange, onDone, onSignOut }
                     </>
                   )}
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setByIdOwner(byIdOwner === owner ? null : owner)
+                      setByIdValue('')
+                      setMsg(null)
+                    }}
+                    className="tap text-xs text-muted underline decoration-line"
+                  >
+                    No me sale en la lista…
+                  </button>
+
                   {current && !current.editable && (
                     <span className="text-xs text-warn">solo lectura</span>
                   )}
                 </div>
+
+                {byIdOwner === owner && (
+                  <div className="mt-3 rounded-2xl border border-line bg-elevated p-3">
+                    <p className="mb-2 text-[11px] leading-snug text-subtle">
+                      Si te lo han compartido pero no aparece arriba, pega aquí su ID. Suele ser
+                      un correo, o algo terminado en <code>@group.calendar.google.com</code>. Lo
+                      encuentra tu pareja en la app, en este mismo calendario.
+                    </p>
+                    <input
+                      value={byIdValue}
+                      onChange={(e) => setByIdValue(e.target.value)}
+                      placeholder="correo@gmail.com"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent-line"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddById(owner)}
+                      disabled={!byIdValue.trim() || busyOwner === owner}
+                      className="tap mt-2 w-full rounded-xl bg-accent py-2 text-xs font-bold text-accent-fg disabled:opacity-40"
+                    >
+                      {busyOwner === owner ? 'Añadiendo…' : 'Añadir a mi lista'}
+                    </button>
+                  </div>
+                )}
 
                 {open && panel?.kind === 'share' && current && (
                   <div className="mt-3 rounded-2xl border border-line bg-elevated p-3">

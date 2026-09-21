@@ -15,6 +15,7 @@ import EventSheet, { type SheetSeed } from './components/EventSheet'
 import FreeSlotsView from './components/FreeSlotsView'
 import Login from './components/Login'
 import MonthView from './components/MonthView'
+import Onboarding from './components/Onboarding'
 import SettingsView from './components/SettingsView'
 import SetupCalendars from './components/SetupCalendars'
 import WeekView from './components/WeekView'
@@ -38,6 +39,9 @@ export default function App() {
   const [cursor, setCursor] = useState(() => startOfDay(new Date()))
   const [selected, setSelected] = useState(() => startOfDay(new Date()))
   const [sheet, setSheet] = useState<{ event: AppEvent | null; seed?: SheetSeed } | null>(null)
+  // Al terminar el asistente, o al saltarselo, se pasa a la pantalla de
+  // siempre para elegir los calendarios a mano.
+  const [manualSetup, setManualSetup] = useState(false)
 
   // Rango a pedir a Google segun la vista. Se memoiza para que useEvents no
   // vuelva a cargar en cada render.
@@ -128,9 +132,21 @@ export default function App() {
   }
 
   if (!isConfigured(settings)) {
+    // Primera vez: el asistente monta los tres calendarios con el correo de la
+    // pareja, en vez de hacer elegir en tres desplegables. La pantalla de
+    // siempre sigue ahi para quien la prefiera y para cambiar cosas despues.
     return (
       <Shell>
-        <SetupCalendars settings={settings} onChange={update} onSignOut={logout} />
+        {manualSetup ? (
+          <SetupCalendars settings={settings} onChange={update} onSignOut={logout} />
+        ) : (
+          <Onboarding
+            profile={profile}
+            onChange={update}
+            onManual={() => setManualSetup(true)}
+            onSignOut={logout}
+          />
+        )}
       </Shell>
     )
   }

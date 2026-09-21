@@ -21,6 +21,7 @@ export * as free from '${root}/src/lib/freeSlots.ts'
 export * as dates from '${root}/src/lib/dates.ts'
 export * as theme from '${root}/src/lib/theme.ts'
 export * as owners from '${root}/src/lib/owners.ts'
+export * as guess from '${root}/src/lib/calendarGuess.ts'
 `)
 await build({ entryPoints: [join(dir,'entry.ts')], bundle: true, format: 'esm', outfile: out,
   define: { 'import.meta.env.VITE_GOOGLE_CLIENT_ID': '"x"' } })
@@ -97,6 +98,36 @@ eq('crea con emoji', withEmoji, 'Mesa para dos\n\n#cena [emoji:🍕]')
 eq('lee el emoji', m.tags.parseDescription(withEmoji), {notes:'Mesa para dos', tags:['cena'], emoji:'🍕'})
 eq('emoji sin etiquetas', m.tags.parseDescription('[emoji:🎂]'), {notes:'', tags:[], emoji:'🎂'})
 eq('emoji vacio no se escribe', m.tags.buildDescription('Hola', [], ''), 'Hola')
+
+// --- adivinar los calendarios en la primera configuracion ---
+// En Google el ID del calendario principal de una cuenta ES su correo, asi que
+// si tu pareja ya te compartio el suyo, su correo esta a la vista en tu lista.
+const g = m.guess
+eq('un correo normal es de persona', g.isPersonalEmailId('ana@gmail.com'), true)
+eq('un grupo no lo es', g.isPersonalEmailId('abc123@group.calendar.google.com'), false)
+eq('los festivos tampoco', g.isPersonalEmailId('es.spanish#holiday@group.v.calendar.google.com'), false)
+eq('los cumpleanos tampoco', g.isPersonalEmailId('addressbook#contacts@group.v.calendar.google.com'), false)
+eq('sin arroba no lo es', g.isPersonalEmailId('no-es-un-correo'), false)
+eq('un dominio propio si', g.isPersonalEmailId('rafa@xauen.io'), true)
+
+const cal = (id, extra = {}) => ({ id, summary: id, accessRole: 'reader', ...extra })
+const lista = [
+  cal('rafa@gmail.com', { primary: true, accessRole: 'owner' }),
+  cal('es.spanish#holiday@group.v.calendar.google.com'),
+  cal('nosotros@group.calendar.google.com', { accessRole: 'writer' }),
+  cal('ana@gmail.com', { accessRole: 'writer' }),
+]
+eq('encuentra el correo de la pareja', g.detectPartnerEmail(lista, 'rafa@gmail.com'), 'ana@gmail.com')
+eq('nunca devuelve el tuyo', g.detectPartnerEmail(lista, 'ana@gmail.com'), null)
+eq('sin nada compartido no adivina', g.detectPartnerEmail([lista[0], lista[1]], 'rafa@gmail.com'), null)
+// Un calendario propio que no sea el principal no es de la pareja.
+eq('ignora los tuyos', g.detectPartnerEmail(
+  [lista[0], cal('otro@gmail.com', { accessRole: 'owner' })], 'rafa@gmail.com'), null)
+
+// El conjunto: ni principales, ni de Google, ni el personal de la pareja.
+eq('candidatos a conjunto', g.ourCalendarCandidates(lista).map((c) => c.id),
+   ['nosotros@group.calendar.google.com'])
+eq('sin candidatos si solo hay personales', g.ourCalendarCandidates([lista[0], lista[3]]).map((c) => c.id), [])
 
 // --- quien es quien en cada movil ---
 // Los carriles son fijos en los dos telefonos, asi que el nombre que se ensena

@@ -92,16 +92,49 @@ npm run dev
 
 ### 3. Conectar los calendarios
 
-La primera vez, la app te pide asignar los tres calendarios. Puedes elegir
-calendarios que ya tengas o pulsar **Crear** para que los haga ella.
+La primera vez sale un asistente que lo monta todo con **un solo dato: el
+correo de tu pareja**. Funciona porque en Google **el ID del calendario
+principal de una cuenta es su propio correo**, así que no hay que buscar nada en
+ningún desplegable:
 
-Después, en cada uno, **Compartir…** te deja dar acceso a la otra cuenta:
+- **Tu calendario** → el de la cuenta con la que has entrado. Se detecta solo.
+- **El de tu pareja** → su correo. Y si ya te ha compartido el suyo, **también
+  se detecta solo**: su correo está a la vista en tu lista de calendarios,
+  porque el ID de su principal *es* su correo. Sale rellenado con una etiqueta
+  «detectado», y se puede cambiar.
+- **El de los dos** → si tu pareja ya lo creó y te lo compartió, el asistente lo
+  encuentra y lo reutiliza; si no, crea «Nosotros».
 
-- `Nosotros` → compartidlo con **permiso de edición** en las dos direcciones.
-- Tu agenda y la suya → como prefiráis, *puede editar* o *solo ver*.
+El asistente distingue un calendario de persona de uno de Google (grupos,
+festivos, cumpleaños) por el ID: los de Google acaban en `calendar.google.com`.
+Así no te ofrece los festivos de España como calendario conjunto ni confunde el
+principal de tu pareja con el de los dos.
 
-Cada uno entra en la app con **su propia cuenta de Google** y ve los tres
-calendarios, porque los compartidos aparecen en su lista.
+Al pulsar **Empezar**, la app comparte tu calendario y el conjunto con su correo.
+Hay un interruptor para decidir si quieres que **pueda editar** tu calendario
+(para apuntaros cosas el uno al otro) o solo verlo. El conjunto siempre es
+editable por los dos.
+
+Después ella hace lo mismo en su móvil. Como tú ya le has compartido los tuyos,
+**en su móvil no tiene que escribir nada**: solo darle a Empezar. Se cierra el
+círculo:
+
+| | En tu móvil | En el de ella |
+| --- | --- | --- |
+| «Yo» | tu correo | su correo |
+| «Mi pareja» | su correo | tu correo |
+| «Nosotros» | el mismo calendario en los dos | |
+
+> La primera vez que lo montes, el asistente te avisará de que ella **aún no ha
+> compartido su calendario contigo**. Es normal y no hay que hacer nada: en
+> cuanto ella entre en la app y ponga tu correo, sus eventos empiezan a
+> aparecer en tu móvil solos, sin tocar nada.
+
+Si prefieres hacerlo a mano, o cambiar algo después, **Ajustes → Los
+calendarios** deja elegir otros calendarios, crear nuevos, renombrarlos,
+compartirlos y quitarlos. Y si te han compartido uno pero no te aparece en la
+lista (pasa cuando Google se queda esperando que aceptes la invitación por
+correo), el enlace **«No me sale en la lista…»** lo añade pegando su ID.
 
 ### 4. Aniversarios
 
@@ -157,12 +190,13 @@ src/
     dates.ts         Fechas y formatos en español
     theme.ts         Tema claro/oscuro, juegos de color y mezcla de tonos
     owners.ts        Quién es quién y nombre de cada carril
+    calendarGuess.ts Detectar el correo de la pareja y el calendario conjunto
     labels.tsx       Los nombres, por contexto de React
     storage.ts       Ajustes por cuenta y copia sin conexión
     anniversaries.ts Aniversarios mensual y anual
     config.ts        Fecha de inicio, colores, permisos
   hooks/             Sesión, ajustes y carga de eventos
-  components/        Vistas y formulario
+  components/        Vistas, formulario y el asistente de la primera vez
 ```
 
 ### Sobre la sesión
@@ -206,8 +240,9 @@ según quién mire, porque entonces cada uno vería un calendario distinto bajo 
 mismo nombre.
 
 Por eso hay un ajuste, `me`, que dice cuál de los dos carriles personales es la
-persona que ha entrado. Se marca con el botón **«Este soy yo»** en la pantalla
-de calendarios, y de ahí salen:
+persona que ha entrado. El asistente de la primera vez lo pone solo (`mine` es
+siempre el de quien entra), y se puede cambiar con el botón **«Este soy yo»** en
+la pantalla de calendarios. De ahí salen:
 
 - El nombre por defecto de cada carril: **«Yo»** para el tuyo, **«Mi pareja»**
   para el otro, **«Nosotros»** para el común. El mismo evento sale como «Yo» en
