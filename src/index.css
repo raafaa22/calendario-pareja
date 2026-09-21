@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  /* Alturas del area segura en iPhone, para que la barra inferior no quede
+     debajo del indicador de inicio. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0d1b24;
+  color: #e4eef2;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Evita el rebote elastico de iOS sobre el fondo de la pagina. */
+  overscroll-behavior-y: none;
+}
+
+/* La app gestiona su propio scroll dentro de cada vista. */
+#root {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  /* Quita el destello azul al tocar en moviles. */
+  .tap {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Los inputs nativos de fecha/hora en iOS heredan un fondo blanco ilegible. */
+input[type='datetime-local'],
+input[type='date'],
+input[type='time'] {
+  color-scheme: dark;
+}
