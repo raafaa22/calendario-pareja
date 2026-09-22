@@ -155,17 +155,28 @@ export default function EventSheet({ settings, event, seed, onClose, onSaved }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+      /*
+       * El hueco de arriba es la barra de estado del movil. Sin el, en iPhone
+       * la hoja se mete por debajo y tapa «Cancelar» y «Guardar», porque la app
+       * se dibuja de borde a borde (viewport-fit=cover). En Android el hueco es
+       * 0 y solo queda el margen.
+       */
+      style={{ paddingTop: 'calc(var(--safe-top) + 0.5rem)' }}
+    >
+      {/* `fixed` y no `absolute`: asi tocar fuera cierra tambien en la franja
+          de la barra de estado, que queda fuera del padding del contenedor. */}
       <button
         type="button"
         aria-label="Cerrar"
         onClick={onClose}
-        className="absolute inset-0 cursor-default"
+        className="fixed inset-0 cursor-default"
       />
 
       <div
-        className="relative flex max-h-[93vh] w-full max-w-lg flex-col rounded-t-[28px] border border-line bg-surface shadow-float sm:rounded-[28px]"
-        style={{ paddingBottom: 'var(--safe-bottom)' }}
+        className="relative flex max-h-full w-full max-w-lg flex-col rounded-t-[28px] border border-line bg-surface shadow-float sm:rounded-[28px]"
+        style={{ paddingBottom: 'max(var(--safe-bottom), 0.5rem)' }}
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
           <button

@@ -387,7 +387,14 @@
 html,
 body,
 #root {
+  /*
+   * `dvh` es el alto que se ve de verdad, ya descontada la barra del navegador
+   * si la hay. `100%` queda de reserva para navegadores que no lo entiendan.
+   * Sin esto, en iOS la app puede acabar siendo un poco mas alta que la
+   * pantalla y la barra de abajo se sale por debajo.
+   */
   height: 100%;
+  height: 100dvh;
 }
 
 body {

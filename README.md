@@ -371,6 +371,23 @@ casos dejarían de distinguirse.
 
 ### Decisiones que conviene conocer
 
+- **El área segura del móvil.** La app se dibuja de borde a borde
+  (`viewport-fit=cover` y barra de estado translúcida en iOS), así que todo lo
+  que llega al borde superior o inferior tiene que dejar hueco con
+  `var(--safe-top)` / `var(--safe-bottom)`. Si se añade una pantalla o un panel
+  nuevo que ocupe el alto completo, hay que acordarse: sin eso, en iPhone su
+  cabecera se mete debajo del reloj y la batería. Le pasó a la hoja de editar
+  evento, que tapaba «Cancelar» y «Guardar».
+
+  Y al reservarlo, **`max()` y no `+`**: los 34 px del área segura del iPhone ya
+  son de sobra para el indicador de inicio, así que sumarles un margen propio
+  solo deja una franja muerta abajo. `max(var(--safe-bottom), 0.5rem)` da 34 en
+  iPhone y 8 donde no hay área segura.
+
+- **El alto de la app es `100dvh`**, con `100%` de reserva. Es el alto que se ve
+  de verdad; con `100%` a secas, en iOS la app puede acabar siendo un poco más
+  alta que la pantalla y la barra de abajo se sale.
+
 - **En la vista de mes cabe poco, y se elige qué cabe.** Una celda mide unos
   48 px en un móvil: descontando borde y relleno quedan ~42 px, que a 8 px de
   letra son unas 10 letras. La hora gasta 2 o 3 y el emoji otros 2 o 3, así que

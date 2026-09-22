@@ -219,7 +219,10 @@ export default function Onboarding({ profile, onChange, onManual, onSignOut }: P
   // Ya está montado y solo quedan avisos que leer.
   if (pending) {
     return (
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto px-4 pb-6"
+        style={{ paddingTop: 'calc(var(--safe-top) + 1.5rem)' }}
+      >
         <div className="mx-auto max-w-lg">
           <h1 className="text-xl font-extrabold">Listo</h1>
           <p className="mt-1.5 text-sm leading-relaxed text-muted">
@@ -248,7 +251,10 @@ export default function Onboarding({ profile, onChange, onManual, onSignOut }: P
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+    <div
+      className="min-h-0 flex-1 overflow-y-auto px-4 pb-6"
+      style={{ paddingTop: 'calc(var(--safe-top) + 1.5rem)' }}
+    >
       <div className="mx-auto max-w-lg">
         <h1 className="text-xl font-extrabold">
           {profile?.givenName ? `Hola, ${profile.givenName}` : 'Vamos a montarlo'}

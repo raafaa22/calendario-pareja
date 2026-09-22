@@ -335,7 +335,13 @@ export default function App() {
         */}
         <nav
           className="shrink-0 px-3 pt-1.5"
-          style={{ paddingBottom: 'calc(var(--safe-bottom) + 0.5rem)' }}
+          /*
+           * `max` y no `+`: el area segura del iPhone ya son 34px, de sobra
+           * para el indicador de inicio. Sumarle otros 8 dejaba una franja
+           * muerta bajo la barra. Donde no hay area segura (Android, web) se
+           * queda el margen de 8.
+           */
+          style={{ paddingBottom: 'max(var(--safe-bottom), 0.5rem)' }}
         >
           <div className="flex items-center gap-1.5 rounded-full border border-line bg-surface p-1.5 shadow-float">
             {VIEWS.map((v) => (

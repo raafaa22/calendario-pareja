@@ -49,7 +49,7 @@ export default function MonthView({
         que quepan los nombres de los eventos sin apretar las celdas: si una
         semana esta cargada, crece y se baja con el dedo.
       */}
-      <div className="grid min-h-0 flex-1 auto-rows-[minmax(76px,1fr)] grid-cols-7 gap-1 overflow-y-auto px-2 pb-2">
+      <div className="grid min-h-0 flex-1 auto-rows-[minmax(66px,1fr)] grid-cols-7 gap-1 overflow-y-auto px-2 pb-2">
         {days.map((day) => {
           const dayEvents = events.filter((e) => occursOn(e, day)).sort(byStart)
           const shown = dayEvents.slice(0, MAX_NAMED)
@@ -100,7 +100,7 @@ export default function MonthView({
       </div>
 
       {/* Detalle del dia tocado. */}
-      <div className="flex max-h-[34%] shrink-0 flex-col rounded-t-3xl border-t border-line bg-surface shadow-float">
+      <div className="flex max-h-[32%] shrink-0 flex-col rounded-t-3xl border-t border-line bg-surface shadow-float">
         <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-3">
           <h2 className="truncate text-sm font-extrabold first-letter:uppercase">
             {fmt.dayFull(selected)}

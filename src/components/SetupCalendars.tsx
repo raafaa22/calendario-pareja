@@ -192,7 +192,12 @@ export default function SetupCalendars({
   const done = OWNERS.every((o) => settings.calendars[o])
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-4">
+    <div
+      className="mx-auto max-w-lg px-4 pb-4"
+      /* Embebido en los ajustes la cabecera ya deja el hueco de la barra de
+         estado; suelto, en la configuracion inicial, hay que dejarlo aqui. */
+      style={{ paddingTop: onDone ? '1rem' : 'calc(var(--safe-top) + 1rem)' }}
+    >
       {/* Dentro de los ajustes el titulo ya lo pone la cabecera. */}
       {!onDone && <h1 className="text-xl font-extrabold">Los calendarios</h1>}
       <p className="mt-1.5 text-sm leading-relaxed text-muted">
